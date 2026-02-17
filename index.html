@@ -3,190 +3,189 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Dosis Check Pro v22</title>
+    <title>Dosis Check Pro v23</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
     <style>
         :root { --bg: #000; --blue: #0A84FF; --green: #30D158; --red: #FF453A; --yellow: #FFD60A; --card: #1C1C1E; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: white; margin: 0; height: 100dvh; overflow: hidden; }
-        .overlay { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+        
+        /* Pantallas */
+        .overlay { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; }
         .hidden { display: none !important; }
-        .header { background: var(--card); padding: 15px; border-bottom: 2px solid var(--blue); display: flex; justify-content: space-between; align-items: center; }
-        .progress-bar { height: 4px; background: #333; width: 100%; }
+
+        /* UI Principal */
+        .header { background: var(--card); padding: 15px; border-bottom: 2px solid var(--blue); }
+        .p-nombre { font-size: 1.5rem; font-weight: bold; margin: 0; }
+        .p-cama { font-size: 1.1rem; color: var(--blue); font-weight: 800; margin-top: 4px; }
+        
+        .progress-bar { height: 6px; background: #333; width: 100%; }
         .progress-fill { height: 100%; background: var(--blue); width: 0%; transition: 0.3s; }
+
         .main-content { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 25px; text-align: center; }
-        .val-med { font-size: 2.2rem; color: var(--yellow); font-weight: 800; margin-bottom: 15px; line-height: 1.1; }
-        .val-hora { font-size: 1.6rem; color: var(--green); background: rgba(48,209,88,0.1); padding: 10px 20px; border-radius: 50px; display: inline-block; font-weight: bold; }
+        .val-med { font-size: 2.3rem; color: var(--yellow); font-weight: 800; line-height: 1.1; margin-bottom: 15px; }
+        .val-hora { font-size: 1.8rem; color: var(--green); background: rgba(48,209,88,0.1); padding: 10px 30px; border-radius: 50px; display: inline-block; font-weight: bold; }
+
         .footer { background: var(--card); padding: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding-bottom: env(safe-area-inset-bottom); }
-        .btn { height: 65px; border-radius: 15px; border: none; font-weight: bold; color: white; cursor: pointer; text-transform: uppercase; }
+        .btn { height: 70px; border-radius: 15px; border: none; font-weight: bold; color: white; cursor: pointer; text-transform: uppercase; font-size: 0.9rem; }
         .btn-next { background: var(--blue); grid-column: span 2; }
+
+        /* Reporte Final (Hoja Blanca) */
+        #report { background: white !important; color: black !important; display: block; overflow-y: auto; text-align: left; padding: 40px 20px; }
+        #report h2 { color: black; border-bottom: 2px solid black; padding-bottom: 10px; }
+        .report-item { color: black; border-bottom: 1px solid #ccc; padding: 10px 0; font-size: 1rem; }
+        .report-item b { color: #d32f2f; }
+
         .log-mic { position: fixed; top: 10px; right: 10px; font-size: 0.7rem; background: var(--red); padding: 5px 12px; border-radius: 20px; z-index: 10000; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div id="setup" class="overlay">
-    <h1 style="color:var(--blue); margin-bottom: 10px;">Dosis Check Pro</h1>
-    <p style="color:#888; margin-bottom: 25px;">Versión 22 - Estable</p>
-    
-    <select id="turnoSelect" style="padding:15px; width:100%; max-width:320px; margin-bottom:20px; border-radius:12px; background: #222; color: white; border: 1px solid #444; font-size: 1rem;">
+    <h1 style="color:var(--blue);">Dosis Check Pro v23</h1>
+    <select id="turnoSelect" style="padding:15px; width:100%; max-width:320px; margin-bottom:20px; border-radius:12px; background:#222; color:white; border:1px solid #444;">
         <option value="matutino">Matutino (14h-21h)</option>
         <option value="vespertino">Vespertino (22h-03h)</option>
         <option value="nocturno">Nocturno (04h-13h)</option>
     </select>
-    
-    <button onclick="document.getElementById('docInput').click()" style="padding:20px; background:var(--blue); color:white; border:none; border-radius:15px; width:100%; max-width:320px; font-weight:bold; font-size: 1rem;">📁 CARGAR DOCX</button>
+    <button onclick="document.getElementById('docInput').click()" style="padding:20px; background:var(--blue); color:white; border:none; border-radius:15px; width:100%; max-width:320px; font-weight:bold;">📁 CARGAR ARCHIVO</button>
     <input type="file" id="docInput" accept=".docx" multiple class="hidden">
-    <p id="statusMsg" style="margin-top:20px; color:var(--yellow); text-align: center;"></p>
 </div>
 
 <div id="logMic" class="log-mic hidden">VOZ OFF</div>
 
 <div id="viewer" class="hidden" style="display:flex; flex-direction:column; height:100dvh">
     <div class="header">
-        <span id="pNom" style="font-weight:bold; font-size: 1.1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 70%;">--</span>
-        <span id="pCam" style="color:var(--blue); font-weight: 800;">--</span>
+        <p id="pNom" class="p-nombre">--</p>
+        <p id="pCam" class="p-cama">--</p>
     </div>
     <div class="progress-bar"><div id="pFill" class="progress-fill"></div></div>
     <div class="main-content">
-        <div id="mDet" class="val-med">Cargando...</div>
+        <div id="mDet" class="val-med">--</div>
         <div><span id="mHor" class="val-hora">--:--</span></div>
-        <div id="mObs" style="margin-top:25px; font-style:italic; color:#8E8E93; border-left: 3px solid var(--blue); padding-left: 10px; text-align: left; font-size: 0.95rem;"></div>
+        <p id="mServicio" style="margin-top:20px; color:var(--blue); font-weight:bold; letter-spacing:1px;"></p>
     </div>
     <div class="footer">
-        <button id="btnVoz" class="btn" style="background:#333; grid-column: span 2;" onclick="iniciarVoz()">🎙️ ACTIVAR VOZ / INICIAR</button>
-        <button class="btn" style="background:#3d0a0a; color:var(--red); border: 1px solid var(--red);" onclick="marcarProblema('FALTA')">FALTA</button>
+        <button id="btnVoz" class="btn" style="background:#333; grid-column: span 2;" onclick="iniciarVoz()">🎙️ INICIAR REVISIÓN CON VOZ</button>
+        <button class="btn" style="background:#3d0a0a; color:var(--red); border:1px solid var(--red);" onclick="marcarProblema('FALTA')">FALTA</button>
         <button class="btn btn-next" style="grid-column: span 1;" onclick="siguiente()">SIGUIENTE ➔</button>
     </div>
 </div>
 
-<div id="report" class="overlay hidden">
-    <h2 style="color: white;">Reporte de Faltantes</h2>
-    <div id="reportContent" style="background:white; color:black; width:100%; padding:20px; border-radius:15px; overflow-y:auto; max-height:60vh; text-align: left;"></div>
-    <button onclick="location.reload()" style="margin-top:20px; padding:15px; width:100%; max-width: 320px; background: var(--blue); color: white; border: none; border-radius: 12px; font-weight: bold;">REINICIAR</button>
+<div id="report" class="hidden">
+    <h2>Reporte de Pendientes</h2>
+    <div id="reportContent"></div>
+    <button onclick="window.print()" style="margin-top:20px; padding:15px; background:black; color:white; border:none; width:100%; font-weight:bold;">🖨️ IMPRIMIR / GUARDAR PDF</button>
+    <button onclick="location.reload()" style="margin-top:10px; padding:15px; background:#666; color:white; border:none; width:100%;">VOLVER</button>
 </div>
 
 <script>
     let pasos = [], pendientes = [], indice = 0, voiceActive = false;
     const synth = window.speechSynthesis;
 
+    const obtenerServicio = (cama) => {
+        const c = parseInt(cama.replace(/\D/g, ''));
+        if (c >= 220 && c <= 245) return "ONCOLOGÍA";
+        if (c >= 501 && c <= 521) return "INFECTOLOGÍA";
+        if (c >= 522 && c <= 535) return "CIRUGÍA";
+        if (c >= 536 && c <= 542) return "GASTROENTEROLOGÍA";
+        if (c >= 543 && c <= 549) return "TRAUMATOLOGÍA";
+        if (c >= 550 && c <= 559) return "MEDICINA INTERNA";
+        return "SERVICIO GENERAL";
+    };
+
     document.getElementById('docInput').addEventListener('change', async function(e) {
-        const status = document.getElementById('statusMsg');
-        status.innerText = "Procesando...";
-        
         const files = Array.from(e.target.files);
         const turno = document.getElementById('turnoSelect').value;
-        const hTurnos = { 
-            matutino:[14,15,16,17,18,19,20,21], 
-            vespertino:[22,23,0,1,2,3], 
-            nocturno:[4,5,6,7,8,9,10,11,12,13] 
-        };
+        const hTurnos = { matutino:[14,15,16,17,18,19,20,21], vespertino:[22,23,0,1,2,3], nocturno:[4,5,6,7,8,9,10,11,12,13] };
 
-        try {
-            pasos = [];
-            for (const file of files) {
-                const buffer = await file.arrayBuffer();
-                const result = await mammoth.convertToHtml({arrayBuffer: buffer});
-                const container = document.createElement('div');
-                container.innerHTML = result.value;
-                const rows = Array.from(container.querySelectorAll('tr'));
+        pasos = [];
+        for (const file of files) {
+            const buffer = await file.arrayBuffer();
+            const result = await mammoth.convertToHtml({arrayBuffer: buffer});
+            const container = document.createElement('div');
+            container.innerHTML = result.value;
+            const rows = Array.from(container.querySelectorAll('tr'));
 
-                rows.forEach(row => {
-                    const cols = row.querySelectorAll('td');
-                    if (cols.length >= 3) {
-                        const cam = cols[0].innerText.trim();
-                        const nom = cols[1].innerText.trim();
-                        const meds = cols[2].innerHTML.split(/<br>|<p>|<div>/i);
-                        const obs = cols[3] ? cols[3].innerText.trim() : "Sin observaciones";
+            rows.forEach(row => {
+                const cols = row.querySelectorAll('td');
+                if (cols.length >= 3) {
+                    const cam = cols[0].innerText.trim();
+                    const nom = cols[1].innerText.trim();
+                    const meds = cols[2].innerHTML.split(/<br>|<p>|<div>/i);
 
-                        if (nom.length > 2) {
-                            meds.forEach(m => {
-                                let txt = m.replace(/<[^>]*>/g, '').trim();
-                                if (!txt || txt.length < 3 || /\bPRN\b/i.test(txt)) return;
+                    if (nom.length > 2) {
+                        meds.forEach(m => {
+                            let txt = m.replace(/<[^>]*>/g, '').trim();
+                            if (!txt || txt.length < 3 || /\bPRN\b/i.test(txt)) return;
 
-                                const matchHoras = txt.match(/(\d{1,2}(?:-\d{1,2})*)$/);
-                                const especial = /(C\/|CADA|PREVIO|TACHADO|VANCO|RITU)/i.test(txt);
-
-                                if (matchHoras) {
-                                    matchHoras[0].split('-').forEach(h => {
-                                        let hNum = parseInt(h === '24' ? '0' : h);
-                                        if (hTurnos[turno].includes(hNum)) {
-                                            pasos.push({ cam, nom, med: txt.replace(matchHoras[0], '').trim(), hora: h + ":00", obs });
-                                        }
-                                    });
-                                } else if (especial) {
-                                    pasos.push({ cam, nom, med: txt, hora: "MANUAL", obs: "Nota: " + obs });
-                                }
-                            });
-                        }
+                            const matchHoras = txt.match(/(\d{1,2}(?:-\d{1,2})*)$/);
+                            if (matchHoras) {
+                                matchHoras[0].split('-').forEach(h => {
+                                    let hNum = parseInt(h === '24' ? '0' : h);
+                                    if (hTurnos[turno].includes(hNum)) {
+                                        pasos.push({ cam, nom, med: txt.replace(matchHoras[0], '').trim(), hora: h, servicio: obtenerServicio(cam) });
+                                    }
+                                });
+                            }
+                        });
                     }
-                });
-            }
-
-            if (pasos.length > 0) {
-                document.getElementById('setup').classList.add('hidden');
-                document.getElementById('viewer').classList.remove('hidden');
-                mostrar(false);
-            } else {
-                status.innerText = "No hay dosis para este turno.";
-            }
-        } catch (err) {
-            status.innerText = "Error al leer el archivo.";
+                }
+            });
+        }
+        if (pasos.length > 0) {
+            document.getElementById('setup').classList.add('hidden');
+            document.getElementById('viewer').classList.remove('hidden');
+            mostrar(false);
         }
     });
-
-    function mostrar(conVoz) {
-        if (!pasos[indice]) return;
-        const p = pasos[indice];
-        document.getElementById('pNom').innerText = p.nom;
-        document.getElementById('pCam').innerText = "CAMA " + p.cam;
-        document.getElementById('mDet').innerText = p.med;
-        document.getElementById('mHor').innerText = p.hora === "MANUAL" ? "REVISIÓN MANUAL" : p.hora + " HRS";
-        document.getElementById('mObs').innerText = p.obs;
-        document.getElementById('pFill').style.width = ((indice + 1) / pasos.length * 100) + "%";
-
-        if (conVoz && voiceActive) {
-            let msg = `Cama ${p.cam}. ${p.nom}. ${p.med}. ${p.hora === 'MANUAL' ? 'Horario especial' : 'A las ' + p.hora}`;
-            hablar(msg);
-        }
-    }
 
     function hablar(t) {
         if (!voiceActive) return;
         synth.cancel();
         const u = new SpeechSynthesisUtterance(t);
         u.lang = 'es-MX';
-        u.rate = 1.1;
+        u.rate = 0.9; // VELOCIDAD MÁS LENTA Y CLARA
         synth.speak(u);
+    }
+
+    function mostrar(conVoz) {
+        const p = pasos[indice];
+        document.getElementById('pNom').innerText = p.nom;
+        document.getElementById('pCam').innerText = "CAMA " + p.cam;
+        document.getElementById('mDet').innerText = p.med;
+        document.getElementById('mHor').innerText = p.hora + ":00 HRS";
+        document.getElementById('mServicio').innerText = p.servicio;
+        document.getElementById('pFill').style.width = ((indice + 1) / pasos.length * 100) + "%";
+
+        if (conVoz && voiceActive) {
+            let prefijo = "";
+            // Si es el primero o cambió el servicio, lo anuncia
+            if (indice === 0 || p.servicio !== pasos[indice - 1].servicio) {
+                prefijo = `Entrando a ${p.servicio}. `;
+            }
+            // Evitar decir "veinticuatro" y decir "doce de la noche" o similar
+            let horaLectura = p.hora == "24" || p.hora == "0" ? "doce de la noche" : p.hora;
+            let msg = `${prefijo} Paciente ${p.nom}. Cama ${p.cam}. ${p.med}. A las ${horaLectura}.`;
+            hablar(msg);
+        }
     }
 
     function iniciarVoz() {
         if (voiceActive) return;
         voiceActive = true;
-        
-        // CORRECCIÓN FINAL: Las variables de CSS en JS deben ir entre comillas
-        const btn = document.getElementById('btnVoz');
-        btn.innerText = "🎙️ VOZ ACTIVA";
-        btn.style.background = "var(--green)";
-        btn.style.color = "black";
-        
-        const log = document.getElementById('logMic');
-        log.classList.remove('hidden');
-        log.style.background = "var(--green)";
-        log.innerText = "ESCUCHANDO...";
+        document.getElementById('btnVoz').style.background = "var(--green)";
+        document.getElementById('logMic').classList.remove('hidden');
+        document.getElementById('logMic').style.background = "var(--green)";
+        document.getElementById('logMic').innerText = "ESCUCHANDO...";
 
         const Speech = window.webkitSpeechRecognition || window.SpeechRecognition;
-        if (!Speech) {
-            alert("Navegador no compatible con voz.");
-            return;
-        }
-        
         const rec = new Speech();
         rec.lang = 'es-MX';
         rec.continuous = true;
         rec.onresult = (e) => {
             const cmd = e.results[e.results.length - 1][0].transcript.toLowerCase();
-            if (/(siguiente|ok|pasa|si|sí|pásale|listo)/.test(cmd)) siguiente();
-            else if (/(falta|no está|error)/.test(cmd)) marcarProblema('FALTA');
+            if (/(siguiente|ok|pasa|si|sí|pásale)/.test(cmd)) siguiente();
+            else if (/(falta|error|no)/.test(cmd)) marcarProblema('FALTA');
         };
         rec.onend = () => { if(voiceActive) rec.start(); };
         rec.start();
@@ -194,12 +193,8 @@
     }
 
     function siguiente() {
-        if (indice < pasos.length - 1) { 
-            indice++; 
-            mostrar(true); 
-        } else { 
-            finalizar(); 
-        }
+        if (indice < pasos.length - 1) { indice++; mostrar(true); }
+        else { finalizar(); }
     }
 
     function marcarProblema(tipo) {
@@ -214,8 +209,8 @@
         document.getElementById('report').classList.remove('hidden');
         const content = document.getElementById('reportContent');
         content.innerHTML = pendientes.length 
-            ? pendientes.map(p => `<div style="padding:10px; border-bottom:1px solid #ddd;"><b>Cama ${p.cam}</b>: ${p.med} <br><span style="color:red">⚠️ ${p.problema}</span></div>`).join('')
-            : "<p style='color:green; text-align:center;'>✅ Todo revisado correctamente.</p>";
+            ? pendientes.map(p => `<div class="report-item"><b>[${p.problema}]</b> Cama ${p.cam} - ${p.nom} <br> ${p.med} (${p.hora}:00 hrs)</div>`).join('')
+            : "<p>Todo en orden. Sin faltantes.</p>";
     }
 </script>
 </body>
