@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Validador Pro v5 - Gestión de Pendientes</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #000; color: white; margin: 0; overflow: hidden; }
+        .header-paciente { background: #1a1a1a; padding: 20px; border-bottom: 3px solid #4dadf7; height: 25vh; display: flex; flex-direction: column; justify-content: center; }
+        .label-header { color: #888; font-size: 1.1rem; text-transform: uppercase; }
+        .valor-paciente { font-size: 2.8rem; font-weight: bold; }
+        .valor-cama { font-size: 2.2rem; color: #4dadf7; }
+        .detalle-med { height: 75vh; display: flex; flex-direction: column; justify-content: center; padding: 40px; }
+        .valor-med { font-size: 4rem; font-weight: bold; color: #ffeb3b; }
+        .valor-hora { font-size: 2.5rem; color: #4caf50; margin-top: 15px; background: #1b5e20; display: inline-block; padding: 8px 25px; border-radius: 50px; }
+        .setup-screen, .report-screen { position: fixed; inset: 0; background: #121212; z-index: 100; padding: 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .hidden { display: none; }
+        select, button { padding: 18px; font-size: 1.3rem; width: 100%; max-width: 450px; margin: 10px; border-radius: 12px; border: none; cursor: pointer; }
+        .btn-start { background: #1a73e8; color: white; font-weight: bold; }
+        .lista-pendientes { text-align: left; background: #222; padding: 20px; border-radius: 10px; width: 100%; max-width: 600px; max-height: 300px; overflow-y: auto; color: #ff5252; }
+    </style>
+</head>
+<body>
+
+<div id="setup" class="setup-screen">
+    <h1>Configuración de Turno 🏥</h1>
+    <select id="turnoSelect">
+        <option value="matutino">Matutino (14:00 - 21:00)</option>
+        <option value="vespertino">Vespertino (22:00 - 03:00)</option>
+        <option value="nocturno">Nocturno (04:00 - 13:00)</option>
+    </select>
+    <button class="btn-start" onclick="document.getElementById('docInput').click()">📁 CARGAR WORD Y EMPEZAR</button>
+    <input type="file" id="docInput" accept=".docx" class="hidden">
+</div>
+
+<div id="viewer" class="hidden">
+    <div class="header-paciente">
+        <div id="pacienteTop" class="valor-paciente">---</div>
+        <div id="camaTop" class="valor-cama">---</div>
+    </div>
+    <div class="detalle-med">
+        <div id="medBottom" class="valor-med">---</div>
+        <div id="horaBottom" class="valor-hora">--:--</div>
+        <p style="color: #666; margin-top: 30px;">Comandos: "Siguiente" | "No lo tengo"</p>
+    </div>
+</div>
+
+<div id="report" class="report-screen hidden">
+    <h1 style="color: #ff5252;">⚠️ Medicamentos Pendientes</h1>
+    <div id="listaPendientes" class="lista-pendientes"></div>
+    <button class="btn-start" onclick="location.reload()">NUEVA REVISIÓN</button>
+</div>
+
+<script>
+    let pasos = [];
+    let pendientes = [];
+    let indice = 0;
+    let esperandoConfirmacionFaltante = false;
+    const synth = window.speechSynthesis;
+
+    const turnos = {
+        matutino: [14, 15, 16, 17, 18, 19, 20, 21],
+        vespertino: [22, 23, 24, 0, 1, 2, 3],
+        nocturno: [4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+    };
+
+    function hablar(texto) {
+        synth.cancel();
+        let audioTexto = texto.replace(/\bIV\b/g, "Intravenosa").replace(/\bIM\b/g, "Intramuscular").replace(/\bVO\b/g, "Vía Oral").replace(/\bSC\b/g, "Subcutánea").replace(/\bMG\b/g, "Miligramos");
+        const u = new SpeechSynthesisUtterance(audioTexto);
+        u.lang = 'es-MX';
+        u.rate = 1.2; // VELOCIDAD MÁS RÁPIDA
+        synth.speak(u);
+    }
+
+    document.getElementById('docInput').addEventListener('change', function(e) {
+        const reader = new FileReader();
+        const turnoSel = document.getElementById('turnoSelect').value;
+        reader.onload = function(e) {
+            mammoth.convertToHtml({arrayBuffer: e.target.result}).then(function(result) {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = result.value;
+                const rows = Array.from(tempDiv.querySelectorAll('tr'));
+                pasos = [];
+                for (let i = 2; i < rows.length; i++) {
+                    const cols = rows[i].querySelectorAll('td');
+                    if (cols.length >= 3) {
+                        const cama = cols[0].innerText.trim();
+                        const nombre = cols[1].innerText.trim();
+                        const medsRaw = cols[2].innerHTML.split(/<p>|<br>|<div>/);
+                        medsRaw.forEach(m => {
+                            let tMed = m.replace(/<[^>]*>?/gm, '').trim();
+                            const horasMatch = tMed.match(/(\d{1,2}(?:-\d{1,2})*)$/);
+                            if (horasMatch) {
+                                const hArray = horasMatch[0].split('-');
+                                hArray.forEach(hStr => {
+                                    let hNum = parseInt(hStr === '24' ? '0' : hStr);
+                                    if (turnos[turnoSel].includes(hNum)) {
+                                        pasos.push({ cama, nombre, med: tMed.replace(horasMatch[0], '').trim(), hora: hStr + ":00" });
+                                    }
+                                });
+                            }
+                        });
+                    }
+                }
+                if (pasos.length > 0) iniciar(); else alert("Sin datos.");
+            });
+        };
+        reader.readAsArrayBuffer(this.files[0]);
+    });
+
+    function iniciar() {
+        document.getElementById('setup').classList.add('hidden');
+        document.getElementById('viewer').classList.remove('hidden');
+        iniciarReconocimiento();
+        mostrar();
+    }
+
+    function mostrar() {
+        const p = pasos[indice];
+        document.getElementById('pacienteTop').innerText = p.nombre;
+        document.getElementById('camaTop').innerText = "CAMA: " + p.cama;
+        document.getElementById('medBottom').innerText = p.med;
+        document.getElementById('horaBottom').innerText = p.hora + " hrs";
+        hablar(`Paciente ${p.nombre}. Cama ${p.cama}. ${p.med} a las ${p.hora}`);
+    }
+
+    function gestionarComando(cmd) {
+        if (esperandoConfirmacionFaltante) {
+            if (cmd.includes("no")) {
+                pendientes.push(pasos[indice]);
+                hablar("Anotado en pendientes.");
+                setTimeout(siguiente, 1500);
+            } else {
+                hablar("Continuamos.");
+                mostrar();
+            }
+            esperandoConfirmacionFaltante = false;
+            return;
+        }
+
+        if (cmd.includes("siguiente") || cmd.includes("correcto") || cmd.includes("sí")) {
+            siguiente();
+        } else if (cmd.includes("no lo tengo")) {
+            hablar("¿No lo tienes?");
+            esperandoConfirmacionFaltante = true;
+        }
+    }
+
+    function siguiente() {
+        if (indice < pasos.length - 1) {
+            indice++;
+            mostrar();
+        } else {
+            finalizar();
+        }
+    }
+
+    function finalizar() {
+        document.getElementById('viewer').classList.add('hidden');
+        document.getElementById('report').classList.remove('hidden');
+        const listaDiv = document.getElementById('listaPendientes');
+        if (pendientes.length === 0) {
+            listaDiv.innerHTML = "<p style='color: #4caf50;'>✅ No hay pendientes.</p>";
+            hablar("Revisión terminada sin pendientes.");
+        } else {
+            listaDiv.innerHTML = pendientes.map(p => `<p>• <b>Cama ${p.cama}:</b> ${p.med} (${p.nombre})</p>`).join('');
+            hablar(`Revisión terminada. Tienes ${pendientes.length} pendientes.`);
+        }
+    }
+
+    function iniciarReconocimiento() {
+        const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        rec.lang = 'es-MX';
+        rec.continuous = true;
+        rec.onresult = (e) => {
+            const cmd = e.results[e.results.length - 1][0].transcript.toLowerCase();
+            gestionarComando(cmd);
+        };
+        rec.onend = () => rec.start();
+        rec.start();
+    }
+</script>
+</body>
+</html>
