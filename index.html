@@ -4,59 +4,93 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Dosis Check iPad Pro</title>
+    <title>Dosis Check iPad Final</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
     <style>
         :root { --bg: #000; --blue: #0A84FF; --green: #30D158; --red: #FF453A; --yellow: #FFD60A; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); color: white; margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-        .header { background: #1C1C1E; padding: 20px; border-bottom: 2px solid var(--blue); }
-        .p-nombre { font-size: 2.2rem; font-weight: bold; margin: 0; }
-        .p-cama { font-size: 1.2rem; color: var(--blue); margin-top: 5px; font-weight: 600; }
-        .main { display: flex; flex: 1; overflow: hidden; }
+        
+        /* Layout corregido para iPad */
+        * { box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, sans-serif; 
+            background: var(--bg); color: white; margin: 0; 
+            height: 100vh; width: 100vw;
+            display: flex; flex-direction: column; 
+            position: fixed; /* Evita rebotes en iPad */
+        }
+
+        /* Pantalla de carga */
+        .setup-overlay { 
+            position: fixed; inset: 0; background: #000; z-index: 9999; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px;
+        }
+
+        /* Secciones principales */
+        .header { background: #1C1C1E; padding: 20px; border-bottom: 2px solid var(--blue); flex-shrink: 0; }
+        .p-nombre { font-size: 2.2rem; font-weight: bold; margin: 0; color: #fff; }
+        .p-cama { font-size: 1.3rem; color: var(--blue); margin: 0; font-weight: 600; }
+
+        .main-scroll { 
+            flex-grow: 1; display: flex; flex-direction: row; overflow: hidden; 
+            background: #000; border-bottom: 1px solid #333;
+        }
         .col-med { flex: 1.3; padding: 25px; display: flex; flex-direction: column; justify-content: center; border-right: 1px solid #333; }
-        .col-obs { flex: 0.7; padding: 25px; background: #0A0A0A; display: flex; flex-direction: column; justify-content: center; }
-        .val-med { font-size: 3rem; font-weight: 800; color: var(--yellow); line-height: 1.1; }
-        .val-hora { font-size: 1.8rem; color: var(--green); margin-top: 15px; font-weight: bold; background: rgba(48, 209, 88, 0.2); padding: 5px 15px; border-radius: 10px; display: inline-block; }
-        .val-obs { font-size: 1.4rem; color: #8E8E93; border-left: 4px solid var(--blue); padding-left: 15px; font-style: italic; }
-        .footer { padding: 20px; background: #1C1C1E; display: flex; gap: 10px; }
-        .btn { flex: 1; height: 65px; border-radius: 15px; border: none; font-size: 1.2rem; font-weight: bold; cursor: pointer; color: white; }
-        .btn-voice { background: #3A3A3C; border: 2px solid #555; }
-        .btn-fail { background: #441111; color: var(--red); border: 2px solid var(--red); }
-        .btn-next { background: var(--blue); }
-        .setup-overlay { position: fixed; inset: 0; background: #000; z-index: 1000; padding: 30px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .log-mic { position: fixed; top: 5px; right: 5px; font-size: 0.7rem; color: var(--green); opacity: 0.7; }
+        .col-obs { flex: 0.7; padding: 25px; background: #080808; display: flex; flex-direction: column; justify-content: center; }
+
+        .val-med { font-size: 2.8rem; font-weight: 800; color: var(--yellow); line-height: 1.1; margin-bottom: 15px; }
+        .val-hora { font-size: 2rem; color: var(--green); font-weight: bold; background: rgba(48, 209, 88, 0.2); padding: 10px 20px; border-radius: 12px; display: inline-block; }
+        .val-obs { font-size: 1.5rem; color: #8E8E93; border-left: 4px solid var(--blue); padding-left: 15px; font-style: italic; }
+
+        /* Botonera inferior - FORZADA A SER VISIBLE */
+        .footer { 
+            height: 140px; background: #1C1C1E; 
+            display: flex; gap: 15px; padding: 20px; 
+            flex-shrink: 0; z-index: 100;
+        }
+        .btn { 
+            flex: 1; border: none; border-radius: 20px; 
+            font-size: 1.4rem; font-weight: bold; cursor: pointer; color: white;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .btn-voice { background: #3A3A3C; border: 3px solid #555; }
+        .btn-fail { background: #441111; color: var(--red); border: 3px solid var(--red); }
+        .btn-next { background: var(--blue); box-shadow: 0 4px 15px rgba(10, 132, 255, 0.3); }
+
+        .log-mic { position: fixed; top: 10px; right: 20px; font-size: 0.8rem; color: var(--green); z-index: 1000; }
         .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
 <div id="setup" class="setup-overlay">
-    <h1 style="font-size: 2rem;">Dosis Check iPad</h1>
-    <select id="turnoSelect" style="width: 100%; max-width: 350px; padding: 15px; background: #1C1C1E; color: white; border-radius: 10px; margin-bottom: 20px; font-size: 1.1rem;">
+    <h1 style="font-size: 2.5rem; margin-bottom: 20px;">Dosis Check Pro</h1>
+    <select id="turnoSelect" style="width: 100%; max-width: 400px; padding: 20px; background: #1C1C1E; color: white; border-radius: 15px; margin-bottom: 20px; font-size: 1.2rem;">
         <option value="matutino">Turno Matutino (14-21h)</option>
         <option value="vespertino">Turno Vespertino (22-03h)</option>
         <option value="nocturno">Turno Nocturno (04-13h)</option>
     </select>
-    <button onclick="document.getElementById('docInput').click()" style="width: 100%; max-width: 350px; padding: 20px; background: var(--blue); color: white; border: none; border-radius: 15px; font-weight: bold; font-size: 1.2rem;">📁 CARGAR ARCHIVO WORD</button>
+    <button onclick="document.getElementById('docInput').click()" style="width: 100%; max-width: 400px; padding: 25px; background: var(--blue); color: white; border: none; border-radius: 20px; font-weight: bold; font-size: 1.4rem;">📁 CARGAR WORD</button>
     <input type="file" id="docInput" accept=".docx" class="hidden">
 </div>
 
-<div class="log-mic" id="logMic">Micro: Apagado</div>
+<div class="log-mic" id="logMic">Voz: OFF</div>
 
-<div id="viewer" class="hidden" style="display:contents">
+<div id="viewer" class="hidden" style="display: flex; flex-direction: column; height: 100vh;">
     <div class="header">
-        <p id="pNom" class="p-nombre">Esperando...</p>
+        <p id="pNom" class="p-nombre">Cargando...</p>
         <p id="pCam" class="p-cama">CAMA: --</p>
     </div>
-    <div class="main">
+    
+    <div class="main-scroll">
         <div class="col-med">
-            <div id="mDet" class="val-med">---</div>
+            <div class="val-med" id="mDet">---</div>
             <div id="mHor" class="val-hora">--:--</div>
         </div>
         <div class="col-obs">
             <div id="mObs" class="val-obs">---</div>
         </div>
     </div>
+
     <div class="footer">
         <button id="btnVoz" class="btn btn-voice" onclick="iniciarSistemaVoz()">🎙️ ACTIVAR VOZ</button>
         <button class="btn btn-fail" onclick="marcarFaltante()">FALTA</button>
@@ -69,11 +103,17 @@
     const synth = window.speechSynthesis;
     let rec;
 
-    // 1. DESBLOQUEO DE AUDIO (Crucial para iPad)
+    // AUDIO: Corregido para iOS
     function hablar(texto) {
+        if (!texto) return;
         synth.cancel();
-        let audioClean = texto.replace(/\bIV\b/gi, "Intravenosa").replace(/\bIM\b/gi, "Intramuscular").replace(/\bVO\b/gi, "Vía Oral").replace(/\bGR?\b/gi, "gramos").replace(/\bMG\b/gi, "miligramos");
-        const utterance = new SpeechSynthesisUtterance(audioClean);
+        const utterance = new SpeechSynthesisUtterance(
+            texto.replace(/\bIV\b/gi, "Intravenosa")
+                 .replace(/\bIM\b/gi, "Intramuscular")
+                 .replace(/\bVO\b/gi, "Vía Oral")
+                 .replace(/\bGR?\b/gi, "gramos")
+                 .replace(/\bMG\b/gi, "miligramos")
+        );
         utterance.lang = 'es-MX';
         utterance.rate = 1.3;
         synth.speak(utterance);
@@ -114,62 +154,71 @@
                 if(pasos.length > 0) {
                     document.getElementById('setup').classList.add('hidden');
                     document.getElementById('viewer').classList.remove('hidden');
-                    mostrar();
+                    // NO hablamos aquí, esperamos a que toque ACTIVAR VOZ para desbloquear audio
+                    mostrarManual();
                 } else alert("No hay datos en este turno");
             });
         };
         reader.readAsArrayBuffer(this.files[0]);
     });
 
-    function mostrar() {
+    function mostrarManual() {
         const p = pasos[indice];
         document.getElementById('pNom').innerText = p.nom;
         document.getElementById('pCam').innerText = "CAMA " + p.cam;
         document.getElementById('mDet').innerText = p.med;
         document.getElementById('mHor').innerText = p.hora + " HRS";
         document.getElementById('mObs').innerText = p.obs;
-        hablar(`Paciente ${p.nom}. Cama ${p.cam}. ${p.med}. A las ${p.hora}`);
     }
 
-    // 2. INICIO DE VOZ Y MICRÓFONO (Doble acción)
     function iniciarSistemaVoz() {
-        // Desbloqueo inicial de sonido con un texto vacío
-        hablar("Iniciando");
-
+        // GESTO DE USUARIO: Desbloquea SpeechSynthesis en iPad
+        hablar("Iniciando revisión.");
+        
         const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!Speech) return alert("Navegador no compatible");
 
         rec = new Speech();
         rec.lang = 'es-MX';
         rec.continuous = true;
-        rec.interimResults = false;
 
         rec.onstart = () => {
             document.getElementById('btnVoz').style.background = "#32D74B";
-            document.getElementById('logMic').innerText = "Micro: Escuchando...";
+            document.getElementById('logMic').innerText = "Voz: OK";
+            mostrarConVoz(); // Empezamos a dictar
         };
 
         rec.onresult = (e) => {
             const cmd = e.results[e.results.length - 1][0].transcript.toLowerCase();
             document.getElementById('logMic').innerText = "Escuché: " + cmd;
-            if (cmd.includes("siguiente") || cmd.includes("ok") || cmd.includes("correcto")) siguiente();
-            if (cmd.includes("falta") || cmd.includes("no lo tengo")) marcarFaltante();
+            if (cmd.includes("siguiente") || cmd.includes("ok") || cmd.includes("sí") || cmd.includes("correcto")) siguiente();
+            if (cmd.includes("falta") || cmd.includes("no")) marcarFaltante();
         };
 
-        rec.onerror = (e) => { 
-            document.getElementById('logMic').innerText = "Error: " + e.error;
-            if(e.error === 'not-allowed') alert("Permite el micrófono en Ajustes > Safari");
-        };
-
-        rec.onend = () => { rec.start(); }; // Auto-reinicio
+        rec.onend = () => { rec.start(); }; 
         rec.start();
     }
 
-    function siguiente() {
-        if (indice < pasos.length - 1) { indice++; mostrar(); }
-        else { hablar("Terminado"); location.reload(); }
+    function mostrarConVoz() {
+        const p = pasos[indice];
+        mostrarManual();
+        hablar(`Paciente ${p.nom}. Cama ${p.cam}. ${p.med}. A las ${p.hora}`);
     }
-    function marcarFaltante() { hablar("Anotado"); setTimeout(siguiente, 1000); }
+
+    function siguiente() {
+        if (indice < pasos.length - 1) {
+            indice++;
+            mostrarConVoz();
+        } else {
+            hablar("Fin de la lista.");
+            setTimeout(() => location.reload(), 2000);
+        }
+    }
+
+    function marcarFaltante() {
+        hablar("Anotado.");
+        setTimeout(siguiente, 1200);
+    }
 </script>
 </body>
 </html>
