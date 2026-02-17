@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Dosis Check Pro v17</title>
+    <title>Dosis Check Pro v18</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
     <style>
         :root { --bg: #000; --blue: #0A84FF; --green: #30D158; --red: #FF453A; --yellow: #FFD60A; --card: #1C1C1E; }
@@ -17,14 +17,16 @@
         /* UI Principal */
         .header { background: var(--card); padding: 15px 25px; border-bottom: 2px solid var(--blue); }
         .p-nombre { font-size: 2rem; font-weight: bold; margin: 0; }
-        .p-cama { font-size: 1.2rem; color: var(--blue); font-weight: 600; }
+        .p-cama { font-size: 1.2rem; color: var(--blue); font-weight: 600; display: flex; justify-content: space-between; }
+        .p-servicio { color: #8E8E93; font-size: 0.9rem; font-weight: normal; }
         
         .main-content { flex: 1; display: flex; overflow: hidden; }
         .col-med { flex: 1.3; padding: 25px; display: flex; flex-direction: column; justify-content: center; border-right: 1px solid #333; }
         .col-obs { flex: 0.7; padding: 25px; background: #080808; display: flex; flex-direction: column; justify-content: center; }
         
-        .val-med { font-size: 2.8rem; font-weight: 800; color: var(--yellow); line-height: 1.1; }
+        .val-med { font-size: 2.2rem; font-weight: 800; color: var(--yellow); line-height: 1.1; }
         .val-hora { font-size: 1.8rem; color: var(--green); margin-top: 15px; font-weight: bold; background: rgba(48, 209, 88, 0.1); padding: 5px 15px; border-radius: 10px; display: inline-block; }
+        .val-hora.verificar { color: var(--red); background: rgba(255, 69, 58, 0.1); }
         .val-obs { font-size: 1.4rem; color: #8E8E93; border-left: 4px solid var(--blue); padding-left: 15px; font-style: italic; }
 
         /* Botonera */
@@ -49,7 +51,7 @@
 <body>
 
 <div id="setup" class="overlay">
-    <h1 style="font-size: 2rem; margin-bottom: 20px;">Dosis Check Pro v17</h1>
+    <h1 style="font-size: 2rem; margin-bottom: 20px;">Dosis Check Pro v18</h1>
     <select id="turnoSelect" style="width: 100%; max-width: 350px; padding: 15px; background: #1C1C1E; color: white; border-radius: 10px; margin-bottom: 20px; font-size: 1.1rem; border: 1px solid #444;">
         <option value="matutino">Turno Matutino (14-21h)</option>
         <option value="vespertino">Turno Vespertino (22-03h)</option>
@@ -64,7 +66,7 @@
 <div id="viewer" class="hidden" style="display: flex; flex-direction: column; height: 100dvh;">
     <div class="header">
         <p id="pNom" class="p-nombre">Nombre</p>
-        <p id="pCam" class="p-cama">CAMA: --</p>
+        <p class="p-cama"><span id="pCam">CAMA: --</span> <span id="pServ" class="p-servicio">SERVICIO</span></p>
     </div>
     <div class="main-content">
         <div class="col-med">
@@ -95,13 +97,39 @@
 
 <script>
     let pasos = [], pendientes = [], indice = 0;
+    let servicioActualGlobal = ""; // Para rastrear el cambio de servicio
     const synth = window.speechSynthesis;
+
+    // --- NUEVA LÓGICA: Detección de Servicio ---
+    function obtenerServicio(cama) {
+        // Extraemos solo los números de la cama para comparar rangos
+        const num = parseInt(cama.replace(/\D/g, ''));
+        if (!num) return "Piso General";
+
+        if (num >= 220 && num <= 245) return "ONCOLOGÍA";
+        if (num >= 501 && num <= 521) return "INFECTOLOGÍA";
+        if (num >= 522 && num <= 535) return "CIRUGÍA";
+        if (num >= 536 && num <= 542) return "GASTROENTEROLOGÍA";
+        if (num >= 543 && num <= 549) return "TRAUMATOLOGÍA";
+        if (num >= 550 && num <= 559) return "MEDICINA INTERNA";
+        
+        return "Piso General"; // Fallback
+    }
 
     function hablar(t) {
         if (!t) return; synth.cancel();
-        const u = new SpeechSynthesisUtterance(t.replace(/\bIV\b/gi, "Intravenosa").replace(/\bIM\b/gi, "Intramuscular").replace(/\bVO\b/gi, "Vía Oral").replace(/\bGR?\b/gi, "gramos").replace(/\bMG\b/gi, "miligramos"));
+        // Limpiamos texto para que suene más natural
+        let textoLimpio = t.replace(/\bIV\b/gi, "Intravenosa")
+                           .replace(/\bIM\b/gi, "Intramuscular")
+                           .replace(/\bVO\b/gi, "Vía Oral")
+                           .replace(/\bGR?\b/gi, "gramos")
+                           .replace(/\bMG\b/gi, "miligramos")
+                           .replace(/\bC\//gi, "Cada ")
+                           .replace(/\bHRS\b/gi, "horas");
+        
+        const u = new SpeechSynthesisUtterance(textoLimpio);
         u.lang = 'es-MX'; 
-        u.rate = 1.15; // VELOCIDAD EQUILIBRADA
+        u.rate = 1.15; 
         synth.speak(u);
     }
 
@@ -111,6 +139,8 @@
         const hTurnos = { matutino:[14,15,16,17,18,19,20,21], vespertino:[22,23,24,0,1,2,3], nocturno:[4,5,6,7,8,9,10,11,12,13] };
         
         pasos = [];
+        servicioActualGlobal = ""; 
+
         for (const file of files) {
             const buffer = await file.arrayBuffer();
             const res = await mammoth.convertToHtml({arrayBuffer: buffer});
@@ -122,50 +152,137 @@
                 if(cols.length >= 3) {
                     const cam = cols[0].innerText.trim();
                     const nom = cols[1].innerText.trim();
-                    const meds = cols[2].innerHTML.split(/<p>|<br>|<div>/);
                     const obs = cols[3] ? cols[3].innerText.trim() : "Sin observaciones";
+                    
+                    // Dividimos por saltos de línea visuales del HTML generado
+                    const meds = cols[2].innerHTML.split(/<p>|<br>|<div>/);
+                    
                     if(nom.length > 1) {
                         meds.forEach(m => {
+                            // Limpieza básica del texto del medicamento
                             let t = m.replace(/<[^>]*>?/gm, '').trim();
+                            if (!t) return;
+
+                            // --- NUEVA LÓGICA: EXCLUSIÓN DE PRN ---
+                            if (t.toUpperCase().includes("PRN")) return; 
+
+                            const servicio = obtenerServicio(cam);
+
+                            // --- LÓGICA 1: Formato Hora Estándar (ej: 14-22-06) ---
                             const match = t.match(/(\d{1,2}(?:-\d{1,2})*)$/);
+                            let agendado = false;
+
                             if(match) {
-                                match[0].split('-').forEach(h => {
-                                    if(hTurnos[turno].includes(parseInt(h === '24' ? '0' : h))) {
-                                        pasos.push({ cam, nom, med: t.replace(match[0], '').trim(), hora: h + ":00", obs });
+                                const horarioStr = match[0];
+                                const horas = horarioStr.split('-');
+                                const textoMed = t.replace(horarioStr, '').trim();
+
+                                horas.forEach(h => {
+                                    // Convertir '24' a '0' para cálculos de reloj
+                                    let hNum = parseInt(h === '24' ? '0' : h);
+                                    if(hTurnos[turno].includes(hNum)) {
+                                        pasos.push({ 
+                                            cam, nom, servicio, 
+                                            med: textoMed, 
+                                            hora: h + ":00", 
+                                            tipo: 'HORA',
+                                            obs 
+                                        });
+                                        agendado = true;
                                     }
                                 });
+                            }
+                            
+                            // --- LÓGICA 2: Medicamentos "Especiales" / Frecuencias / Previos ---
+                            // Si no se agendó por hora exacta, revisamos si es un caso especial
+                            if (!agendado) {
+                                const tUpper = t.toUpperCase();
+                                // Detectar patrones: C/8, CADA, PREVIO, PRE, o números sueltos al final (ej "paracetamol 1g 12")
+                                const esFrecuencia = /C\/|CADA|AL DIA|AL DÍA/.test(tUpper);
+                                const esPrevio = /PREVIO|PRED|ANTES DE/.test(tUpper);
+                                const esHoraSuelta = /(\s|^)\d{1,2}(\s|$)/.test(tUpper) && !tUpper.includes("MG") && !tUpper.includes("GR");
+
+                                if (esFrecuencia || esPrevio || esHoraSuelta) {
+                                    pasos.push({ 
+                                        cam, nom, servicio, 
+                                        med: t, 
+                                        hora: "VERIFICAR", 
+                                        tipo: 'CHECK',
+                                        obs 
+                                    });
+                                }
                             }
                         });
                     }
                 }
             });
         }
-        if(pasos.length > 0) { document.getElementById('setup').classList.add('hidden'); document.getElementById('viewer').classList.remove('hidden'); mostrar(false); }
+        if(pasos.length > 0) { 
+            document.getElementById('setup').classList.add('hidden'); 
+            document.getElementById('viewer').classList.remove('hidden'); 
+            mostrar(false); 
+        } else {
+            alert("No se encontraron medicamentos para este turno en el archivo.");
+        }
     });
 
     function mostrar(conVoz) {
         const p = pasos[indice];
+        
+        // Actualizar UI
         document.getElementById('pNom').innerText = p.nom;
         document.getElementById('pCam').innerText = "CAMA " + p.cam;
+        document.getElementById('pServ').innerText = p.servicio;
         document.getElementById('mDet').innerText = p.med;
-        document.getElementById('mHor').innerText = p.hora + " HRS";
+        
+        const divHora = document.getElementById('mHor');
+        divHora.innerText = p.hora === "VERIFICAR" ? "REVISAR DOSIS" : p.hora + " HRS";
+        
+        // Cambiar color si es para verificar
+        if(p.hora === "VERIFICAR") divHora.classList.add('verificar');
+        else divHora.classList.remove('verificar');
+
         document.getElementById('mObs').innerText = p.obs;
 
         if (conVoz) {
             let guion = "";
-            // Lógica: "Mismo paciente" si el nombre coincide con el anterior
-            if (indice > 0 && pasos[indice].nom === pasos[indice - 1].nom) {
-                guion = `Mismo paciente. ${p.med}. A las ${p.hora}`;
-            } else {
-                guion = `Paciente ${p.nom}. Cama ${p.cam}. ${p.med}. A las ${p.hora}`;
+            let introServicio = "";
+
+            // --- LÓGICA DE CAMBIO DE SERVICIO ---
+            // Revisamos si el servicio de este paso es diferente al servicio del paso anterior (o si es el primero)
+            // Nota: Usamos una variable global para rastrear lo que se ha dicho, o comparamos con el array previo.
+            // Para ser más robustos con los botones "anterior" (si existieran), comparamos dinámicamente:
+            
+            const servicioActual = p.servicio;
+            let servicioAnterior = (indice > 0) ? pasos[indice - 1].servicio : "";
+
+            if (servicioActual !== servicioAnterior) {
+                introServicio = `Atención. Iniciando área de ${servicioActual}. `;
             }
+
+            // Construir el guion del paciente
+            if (indice > 0 && pasos[indice].nom === pasos[indice - 1].nom) {
+                // Mismo paciente
+                guion = `${introServicio} Mismo paciente. ${p.med}. `;
+                if(p.hora === "VERIFICAR") guion += "Verificar horario.";
+                else guion += `A las ${p.hora}`;
+            } else {
+                // Nuevo paciente
+                guion = `${introServicio} Cama ${p.cam}. Paciente ${p.nom}. ${p.med}. `;
+                if(p.hora === "VERIFICAR") guion += "Atención, verificar si corresponde dosis.";
+                else guion += `A las ${p.hora}`;
+            }
+            
             hablar(guion);
         }
     }
 
     function iniciarVoz() {
-        hablar("Iniciando.");
+        hablar("Sistema de voz activo.");
+        // Usamos webkitSpeechRecognition para compatibilidad
         const Speech = window.webkitSpeechRecognition || window.SpeechRecognition;
+        if (!Speech) { alert("Tu navegador no soporta reconocimiento de voz. Usa Chrome o Safari."); return; }
+        
         const rec = new Speech();
         rec.lang = 'es-MX'; rec.continuous = true; rec.interimResults = false;
 
@@ -175,11 +292,13 @@
             const cmd = e.results[e.results.length - 1][0].transcript.toLowerCase();
             document.getElementById('logMic').innerText = "Escuché: " + cmd;
             
-            if (cmd.includes("siguiente") || cmd.includes("ok") || cmd.includes("sí") || cmd.includes("pasa") || cmd.includes("correcto")) siguiente();
-            else if (cmd.includes("falta") || cmd.includes("no lo tengo") || cmd.includes("no tengo")) marcarProblema('FALTANTE');
-            else if (cmd.includes("etiqueta") || cmd.includes("mal") || cmd.includes("corregir")) marcarProblema('CORREGIR ETIQUETA');
+            if (cmd.includes("siguiente") || cmd.includes("ok") || cmd.includes("sí") || cmd.includes("listo") || cmd.includes("correcto")) siguiente();
+            else if (cmd.includes("falta") || cmd.includes("no hay") || cmd.includes("no tengo")) marcarProblema('FALTANTE');
+            else if (cmd.includes("etiqueta") || cmd.includes("mal") || cmd.includes("error")) marcarProblema('CORREGIR ETIQUETA');
         };
-        rec.onend = () => rec.start();
+        
+        rec.onerror = (e) => { console.log("Error voz:", e); if(e.error === 'no-speech') return; };
+        rec.onend = () => { if(!document.getElementById('viewer').classList.contains('hidden')) rec.start(); }; // Reiniciar si no hemos terminado
         rec.start();
     }
 
@@ -190,16 +309,16 @@
 
     function marcarProblema(tipo) {
         pendientes.push({ ...pasos[indice], problema: tipo });
-        hablar(tipo === 'FALTANTE' ? "Falta anotada" : "Etiqueta anotada");
+        hablar(tipo === 'FALTANTE' ? "Falta registrada" : "Etiqueta registrada");
         setTimeout(siguiente, 1000);
     }
 
     function finalizar() {
-        hablar("Revisión terminada.");
+        hablar("Revisión finalizada.");
         document.getElementById('viewer').classList.add('hidden');
         document.getElementById('report').classList.remove('hidden');
         const body = document.getElementById('reportContent');
-        body.innerHTML = pendientes.length ? pendientes.map(p => `<tr><td>${p.cam}</td><td>${p.nom}</td><td>${p.med}</td><td><b>${p.problema}</b></td></tr>`).join('') : "<tr><td colspan='4' style='text-align:center; color:green'>Sin pendientes. Todo en orden.</td></tr>";
+        body.innerHTML = pendientes.length ? pendientes.map(p => `<tr><td>${p.cam}</td><td>${p.nom}</td><td>${p.med} (${p.hora})</td><td><b>${p.problema}</b></td></tr>`).join('') : "<tr><td colspan='4' style='text-align:center; color:green'>Excelente. Turno limpio.</td></tr>";
     }
 </script>
 </body>
