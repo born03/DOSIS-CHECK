@@ -3,20 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Dosis Check Pro v23</title>
+    <title>Dosis Check Pro v24</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
     <style>
         :root { --bg: #000; --blue: #0A84FF; --green: #30D158; --red: #FF453A; --yellow: #FFD60A; --card: #1C1C1E; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: white; margin: 0; height: 100dvh; overflow: hidden; }
         
-        /* Pantallas */
         .overlay { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; }
         .hidden { display: none !important; }
 
-        /* UI Principal */
         .header { background: var(--card); padding: 15px; border-bottom: 2px solid var(--blue); }
         .p-nombre { font-size: 1.5rem; font-weight: bold; margin: 0; }
-        .p-cama { font-size: 1.1rem; color: var(--blue); font-weight: 800; margin-top: 4px; }
+        .p-cama { font-size: 1.1rem; color: var(--blue); font-weight: 800; }
         
         .progress-bar { height: 6px; background: #333; width: 100%; }
         .progress-fill { height: 100%; background: var(--blue); width: 0%; transition: 0.3s; }
@@ -26,13 +24,15 @@
         .val-hora { font-size: 1.8rem; color: var(--green); background: rgba(48,209,88,0.1); padding: 10px 30px; border-radius: 50px; display: inline-block; font-weight: bold; }
 
         .footer { background: var(--card); padding: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding-bottom: env(safe-area-inset-bottom); }
-        .btn { height: 70px; border-radius: 15px; border: none; font-weight: bold; color: white; cursor: pointer; text-transform: uppercase; font-size: 0.9rem; }
-        .btn-next { background: var(--blue); grid-column: span 2; }
+        .btn { height: 70px; border-radius: 15px; border: none; font-weight: bold; color: white; cursor: pointer; text-transform: uppercase; font-size: 0.85rem; }
+        .btn-fail { background: #3d0a0a; color: var(--red); border: 1px solid var(--red); }
+        .btn-label { background: #3d2b00; color: var(--yellow); border: 1px solid var(--yellow); }
+        .btn-next { background: var(--blue); grid-column: span 2; height: 60px; margin-top: 5px; }
 
         /* Reporte Final (Hoja Blanca) */
         #report { background: white !important; color: black !important; display: block; overflow-y: auto; text-align: left; padding: 40px 20px; }
         #report h2 { color: black; border-bottom: 2px solid black; padding-bottom: 10px; }
-        .report-item { color: black; border-bottom: 1px solid #ccc; padding: 10px 0; font-size: 1rem; }
+        .report-item { color: black; border-bottom: 1px solid #ccc; padding: 12px 0; font-size: 0.95rem; line-height: 1.4; }
         .report-item b { color: #d32f2f; }
 
         .log-mic { position: fixed; top: 10px; right: 10px; font-size: 0.7rem; background: var(--red); padding: 5px 12px; border-radius: 20px; z-index: 10000; font-weight: bold; }
@@ -41,7 +41,7 @@
 <body>
 
 <div id="setup" class="overlay">
-    <h1 style="color:var(--blue);">Dosis Check Pro v23</h1>
+    <h1 style="color:var(--blue);">Dosis Check Pro v24</h1>
     <select id="turnoSelect" style="padding:15px; width:100%; max-width:320px; margin-bottom:20px; border-radius:12px; background:#222; color:white; border:1px solid #444;">
         <option value="matutino">Matutino (14h-21h)</option>
         <option value="vespertino">Vespertino (22h-03h)</option>
@@ -62,20 +62,21 @@
     <div class="main-content">
         <div id="mDet" class="val-med">--</div>
         <div><span id="mHor" class="val-hora">--:--</span></div>
-        <p id="mServicio" style="margin-top:20px; color:var(--blue); font-weight:bold; letter-spacing:1px;"></p>
+        <p id="mServicio" style="margin-top:20px; color:var(--blue); font-weight:bold;"></p>
     </div>
     <div class="footer">
-        <button id="btnVoz" class="btn" style="background:#333; grid-column: span 2;" onclick="iniciarVoz()">🎙️ INICIAR REVISIÓN CON VOZ</button>
-        <button class="btn" style="background:#3d0a0a; color:var(--red); border:1px solid var(--red);" onclick="marcarProblema('FALTA')">FALTA</button>
-        <button class="btn btn-next" style="grid-column: span 1;" onclick="siguiente()">SIGUIENTE ➔</button>
+        <button id="btnVoz" class="btn" style="background:#333; grid-column: span 2;" onclick="iniciarVoz()">🎙️ ACTIVAR VOZ / EMPEZAR</button>
+        <button class="btn btn-fail" onclick="marcarProblema('FALTA')">FALTA</button>
+        <button class="btn btn-label" onclick="marcarProblema('ETIQUETA')">ETIQUETA</button>
+        <button class="btn btn-next" onclick="siguiente()">SIGUIENTE ➔</button>
     </div>
 </div>
 
 <div id="report" class="hidden">
     <h2>Reporte de Pendientes</h2>
     <div id="reportContent"></div>
-    <button onclick="window.print()" style="margin-top:20px; padding:15px; background:black; color:white; border:none; width:100%; font-weight:bold;">🖨️ IMPRIMIR / GUARDAR PDF</button>
-    <button onclick="location.reload()" style="margin-top:10px; padding:15px; background:#666; color:white; border:none; width:100%;">VOLVER</button>
+    <button onclick="window.print()" style="margin-top:20px; padding:15px; background:black; color:white; border:none; width:100%; font-weight:bold; border-radius:10px;">🖨️ PDF / IMPRIMIR</button>
+    <button onclick="location.reload()" style="margin-top:10px; padding:15px; background:#eee; color:black; border:1px solid #ccc; width:100%; border-radius:10px;">NUEVA REVISIÓN</button>
 </div>
 
 <script>
@@ -144,7 +145,7 @@
         synth.cancel();
         const u = new SpeechSynthesisUtterance(t);
         u.lang = 'es-MX';
-        u.rate = 0.9; // VELOCIDAD MÁS LENTA Y CLARA
+        u.rate = 1.06; // VELOCIDAD SOLICITADA
         synth.speak(u);
     }
 
@@ -158,14 +159,9 @@
         document.getElementById('pFill').style.width = ((indice + 1) / pasos.length * 100) + "%";
 
         if (conVoz && voiceActive) {
-            let prefijo = "";
-            // Si es el primero o cambió el servicio, lo anuncia
-            if (indice === 0 || p.servicio !== pasos[indice - 1].servicio) {
-                prefijo = `Entrando a ${p.servicio}. `;
-            }
-            // Evitar decir "veinticuatro" y decir "doce de la noche" o similar
-            let horaLectura = p.hora == "24" || p.hora == "0" ? "doce de la noche" : p.hora;
-            let msg = `${prefijo} Paciente ${p.nom}. Cama ${p.cam}. ${p.med}. A las ${horaLectura}.`;
+            let prefijo = (indice === 0 || p.servicio !== pasos[indice - 1].servicio) ? `Servicio de ${p.servicio}. ` : "";
+            let horaHumana = (p.hora == "24" || p.hora == "0") ? "doce de la noche" : p.hora;
+            let msg = `${prefijo} Paciente ${p.nom}. Cama ${p.cam}. ${p.med}. A las ${horaHumana}.`;
             hablar(msg);
         }
     }
@@ -174,9 +170,10 @@
         if (voiceActive) return;
         voiceActive = true;
         document.getElementById('btnVoz').style.background = "var(--green)";
+        document.getElementById('btnVoz').innerText = "🎙️ ESCUCHANDO...";
         document.getElementById('logMic').classList.remove('hidden');
         document.getElementById('logMic').style.background = "var(--green)";
-        document.getElementById('logMic').innerText = "ESCUCHANDO...";
+        document.getElementById('logMic').innerText = "MICRO: ON";
 
         const Speech = window.webkitSpeechRecognition || window.SpeechRecognition;
         const rec = new Speech();
@@ -184,8 +181,9 @@
         rec.continuous = true;
         rec.onresult = (e) => {
             const cmd = e.results[e.results.length - 1][0].transcript.toLowerCase();
-            if (/(siguiente|ok|pasa|si|sí|pásale)/.test(cmd)) siguiente();
-            else if (/(falta|error|no)/.test(cmd)) marcarProblema('FALTA');
+            if (/(siguiente|ok|pasa|si|sí|pásale|listo)/.test(cmd)) siguiente();
+            else if (/(falta|no)/.test(cmd)) marcarProblema('FALTA');
+            else if (/(etiqueta|corregir|mal)/.test(cmd)) marcarProblema('ETIQUETA');
         };
         rec.onend = () => { if(voiceActive) rec.start(); };
         rec.start();
@@ -199,7 +197,8 @@
 
     function marcarProblema(tipo) {
         pendientes.push({ ...pasos[indice], problema: tipo });
-        siguiente();
+        hablar(tipo === 'FALTA' ? "Faltante anotado" : "Etiqueta anotada");
+        setTimeout(siguiente, 1000);
     }
 
     function finalizar() {
@@ -210,7 +209,7 @@
         const content = document.getElementById('reportContent');
         content.innerHTML = pendientes.length 
             ? pendientes.map(p => `<div class="report-item"><b>[${p.problema}]</b> Cama ${p.cam} - ${p.nom} <br> ${p.med} (${p.hora}:00 hrs)</div>`).join('')
-            : "<p>Todo en orden. Sin faltantes.</p>";
+            : "<p style='text-align:center; color:green; font-weight:bold;'>Todo en orden. Sin observaciones.</p>";
     }
 </script>
 </body>
