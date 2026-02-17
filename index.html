@@ -4,84 +4,68 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Dosis Check iPad Final</title>
+    <title>Dosis Check Pro v14</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
     <style>
         :root { --bg: #000; --blue: #0A84FF; --green: #30D158; --red: #FF453A; --yellow: #FFD60A; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); color: white; margin: 0; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
         
-        /* Layout corregido para iPad */
-        * { box-sizing: border-box; }
-        body { 
-            font-family: -apple-system, sans-serif; 
-            background: var(--bg); color: white; margin: 0; 
-            height: 100vh; width: 100vw;
-            display: flex; flex-direction: column; 
-            position: fixed; /* Evita rebotes en iPad */
-        }
-
-        /* Pantalla de carga */
-        .setup-overlay { 
-            position: fixed; inset: 0; background: #000; z-index: 9999; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px;
-        }
-
-        /* Secciones principales */
-        .header { background: #1C1C1E; padding: 20px; border-bottom: 2px solid var(--blue); flex-shrink: 0; }
-        .p-nombre { font-size: 2.2rem; font-weight: bold; margin: 0; color: #fff; }
-        .p-cama { font-size: 1.3rem; color: var(--blue); margin: 0; font-weight: 600; }
-
-        .main-scroll { 
-            flex-grow: 1; display: flex; flex-direction: row; overflow: hidden; 
-            background: #000; border-bottom: 1px solid #333;
-        }
-        .col-med { flex: 1.3; padding: 25px; display: flex; flex-direction: column; justify-content: center; border-right: 1px solid #333; }
-        .col-obs { flex: 0.7; padding: 25px; background: #080808; display: flex; flex-direction: column; justify-content: center; }
-
-        .val-med { font-size: 2.8rem; font-weight: 800; color: var(--yellow); line-height: 1.1; margin-bottom: 15px; }
-        .val-hora { font-size: 2rem; color: var(--green); font-weight: bold; background: rgba(48, 209, 88, 0.2); padding: 10px 20px; border-radius: 12px; display: inline-block; }
-        .val-obs { font-size: 1.5rem; color: #8E8E93; border-left: 4px solid var(--blue); padding-left: 15px; font-style: italic; }
-
-        /* Botonera inferior - FORZADA A SER VISIBLE */
-        .footer { 
-            height: 140px; background: #1C1C1E; 
-            display: flex; gap: 15px; padding: 20px; 
-            flex-shrink: 0; z-index: 100;
-        }
-        .btn { 
-            flex: 1; border: none; border-radius: 20px; 
-            font-size: 1.4rem; font-weight: bold; cursor: pointer; color: white;
-            display: flex; align-items: center; justify-content: center;
-        }
-        .btn-voice { background: #3A3A3C; border: 3px solid #555; }
-        .btn-fail { background: #441111; color: var(--red); border: 3px solid var(--red); }
-        .btn-next { background: var(--blue); box-shadow: 0 4px 15px rgba(10, 132, 255, 0.3); }
-
-        .log-mic { position: fixed; top: 10px; right: 20px; font-size: 0.8rem; color: var(--green); z-index: 1000; }
+        /* Overlays */
+        .overlay { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; }
         .hidden { display: none !important; }
+
+        /* UI Principal */
+        .header { background: #1C1C1E; padding: 15px 25px; border-bottom: 2px solid var(--blue); }
+        .p-nombre { font-size: 2.2rem; font-weight: bold; margin: 0; }
+        .p-cama { font-size: 1.3rem; color: var(--blue); font-weight: 600; }
+        
+        .main-content { flex: 1; display: flex; overflow: hidden; }
+        .col-med { flex: 1.3; padding: 30px; display: flex; flex-direction: column; justify-content: center; border-right: 1px solid #333; }
+        .col-obs { flex: 0.7; padding: 30px; background: #080808; display: flex; flex-direction: column; justify-content: center; }
+        
+        .val-med { font-size: 3rem; font-weight: 800; color: var(--yellow); line-height: 1.1; }
+        .val-hora { font-size: 2.2rem; color: var(--green); margin-top: 15px; font-weight: bold; background: rgba(48, 209, 88, 0.15); padding: 5px 20px; border-radius: 12px; display: inline-block; }
+        .val-obs { font-size: 1.6rem; color: #8E8E93; border-left: 4px solid var(--blue); padding-left: 15px; font-style: italic; }
+
+        /* Footer con Botones */
+        .footer { background: #1C1C1E; display: flex; gap: 10px; padding: 20px 20px calc(20px + env(safe-area-inset-bottom)); }
+        .btn { flex: 1; height: 75px; border-radius: 20px; border: none; font-size: 1.2rem; font-weight: bold; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .btn-fail { background: #3d0a0a; color: var(--red); border: 2px solid var(--red); }
+        .btn-label { background: #3d2b00; color: var(--yellow); border: 2px solid var(--yellow); }
+        .btn-next { background: var(--blue); }
+
+        /* Reporte Final */
+        #reportTable { width: 100%; border-collapse: collapse; margin-top: 20px; color: white; }
+        #reportTable td, #reportTable th { border: 1px solid #333; padding: 12px; text-align: left; }
+        #reportTable th { background: #1C1C1E; color: var(--blue); }
+        .btn-print { background: var(--green); margin-top: 20px; padding: 15px 40px; }
+
+        .log-status { position: fixed; top: 10px; right: 20px; font-size: 0.8rem; color: var(--green); background: rgba(0,0,0,0.6); padding: 5px 12px; border-radius: 10px; }
+        @media print { .btn-print, .btn-start { display: none; } .overlay { position: relative; background: white; color: black; } #reportTable { color: black; } #reportTable td { border: 1px solid #000; } }
     </style>
 </head>
 <body>
 
-<div id="setup" class="setup-overlay">
-    <h1 style="font-size: 2.5rem; margin-bottom: 20px;">Dosis Check Pro</h1>
-    <select id="turnoSelect" style="width: 100%; max-width: 400px; padding: 20px; background: #1C1C1E; color: white; border-radius: 15px; margin-bottom: 20px; font-size: 1.2rem;">
-        <option value="matutino">Turno Matutino (14-21h)</option>
-        <option value="vespertino">Turno Vespertino (22-03h)</option>
-        <option value="nocturno">Turno Nocturno (04-13h)</option>
+<div id="setup" class="overlay">
+    <h1 style="font-size: 2.5rem; margin-bottom: 20px;">Dosis Check Pro v14</h1>
+    <select id="turnoSelect" style="width: 100%; max-width: 400px; padding: 18px; background: #1C1C1E; color: white; border-radius: 12px; margin-bottom: 20px; font-size: 1.2rem;">
+        <option value="matutino">Matutino (14-21h)</option>
+        <option value="vespertino">Vespertino (22-03h)</option>
+        <option value="nocturno">Nocturno (04-13h)</option>
     </select>
-    <button onclick="document.getElementById('docInput').click()" style="width: 100%; max-width: 400px; padding: 25px; background: var(--blue); color: white; border: none; border-radius: 20px; font-weight: bold; font-size: 1.4rem;">📁 CARGAR WORD</button>
-    <input type="file" id="docInput" accept=".docx" class="hidden">
+    <button onclick="document.getElementById('docInput').click()" style="width: 100%; max-width: 400px; padding: 22px; background: var(--blue); color: white; border: none; border-radius: 15px; font-weight: bold; font-size: 1.2rem;">📁 CARGAR WORD(S)</button>
+    <input type="file" id="docInput" accept=".docx" multiple class="hidden">
 </div>
 
-<div class="log-mic" id="logMic">Voz: OFF</div>
+<div class="log-status" id="logMic">Micro: OFF</div>
 
-<div id="viewer" class="hidden" style="display: flex; flex-direction: column; height: 100vh;">
+<div id="viewer" class="hidden" style="display: flex; flex-direction: column; height: 100dvh;">
     <div class="header">
-        <p id="pNom" class="p-nombre">Cargando...</p>
+        <p id="pNom" class="p-nombre">Nombre</p>
         <p id="pCam" class="p-cama">CAMA: --</p>
     </div>
-    
-    <div class="main-scroll">
+    <div class="main-content">
         <div class="col-med">
             <div class="val-med" id="mDet">---</div>
             <div id="mHor" class="val-hora">--:--</div>
@@ -90,134 +74,124 @@
             <div id="mObs" class="val-obs">---</div>
         </div>
     </div>
-
     <div class="footer">
-        <button id="btnVoz" class="btn btn-voice" onclick="iniciarSistemaVoz()">🎙️ ACTIVAR VOZ</button>
-        <button class="btn btn-fail" onclick="marcarFaltante()">FALTA</button>
+        <button id="btnVoz" class="btn" style="background:#333" onclick="iniciarVoz()">🎙️ VOZ</button>
+        <button class="btn btn-fail" onclick="marcarFaltante('FALTANTE')">FALTA</button>
+        <button class="btn btn-label" onclick="marcarFaltante('CORREGIR ETIQUETA')">ETIQUETA</button>
         <button class="btn btn-next" onclick="siguiente()">SIGUIENTE</button>
     </div>
 </div>
 
-<script>
-    let pasos = [], indice = 0;
-    const synth = window.speechSynthesis;
-    let rec;
+<div id="report" class="overlay hidden" style="justify-content: flex-start; overflow-y: auto;">
+    <h1 style="color:var(--red); margin-top: 40px;">Pendientes de Revisión</h1>
+    <table id="reportTable">
+        <thead><tr><th>Cama</th><th>Paciente</th><th>Medicamento</th><th>Problema</th></tr></thead>
+        <tbody id="reportContent"></tbody>
+    </table>
+    <button class="btn btn-print" onclick="window.print()">🖨️ IMPRIMIR / PDF</button>
+    <button class="btn" style="background:#333; margin-top:10px;" onclick="location.reload()">NUEVA REVISIÓN</button>
+</div>
 
-    // AUDIO: Corregido para iOS
-    function hablar(texto) {
-        if (!texto) return;
-        synth.cancel();
-        const utterance = new SpeechSynthesisUtterance(
-            texto.replace(/\bIV\b/gi, "Intravenosa")
-                 .replace(/\bIM\b/gi, "Intramuscular")
-                 .replace(/\bVO\b/gi, "Vía Oral")
-                 .replace(/\bGR?\b/gi, "gramos")
-                 .replace(/\bMG\b/gi, "miligramos")
-        );
-        utterance.lang = 'es-MX';
-        utterance.rate = 1.3;
-        synth.speak(utterance);
+<script>
+    let pasos = [], pendientes = [], indice = 0, ultimoPaciente = "";
+    const synth = window.speechSynthesis;
+
+    function hablar(t) {
+        if (!t) return; synth.cancel();
+        const u = new SpeechSynthesisUtterance(t.replace(/\bIV\b/gi, "Intravenosa").replace(/\bIM\b/gi, "Intramuscular").replace(/\bVO\b/gi, "Vía Oral").replace(/\bGR?\b/gi, "gramos").replace(/\bMG\b/gi, "miligramos"));
+        u.lang = 'es-MX'; u.rate = 1.35; synth.speak(u);
     }
 
-    document.getElementById('docInput').addEventListener('change', function(e) {
-        const reader = new FileReader();
+    document.getElementById('docInput').addEventListener('change', async function(e) {
+        const files = Array.from(e.target.files);
         const turno = document.getElementById('turnoSelect').value;
         const hTurnos = { matutino: [14,15,16,17,18,19,20,21], vespertino: [22,23,24,0,1,2,3], nocturno: [4,5,6,7,8,9,10,11,12,13] };
         
-        reader.onload = (ev) => {
-            mammoth.convertToHtml({arrayBuffer: ev.target.result}).then(res => {
-                const el = document.createElement('div'); el.innerHTML = res.value;
-                const rows = Array.from(el.querySelectorAll('tr'));
-                pasos = [];
-                rows.slice(2).forEach(row => {
-                    const cols = row.querySelectorAll('td');
-                    if(cols.length >= 3) {
-                        const cam = cols[0].innerText.trim();
-                        const nom = cols[1].innerText.trim();
-                        const meds = cols[2].innerHTML.split(/<p>|<br>|<div>/);
-                        const obs = cols[3] ? cols[3].innerText.trim() : "Sin observaciones";
-                        if(nom.length > 1) {
-                            meds.forEach(m => {
-                                let tMed = m.replace(/<[^>]*>?/gm, '').trim();
-                                const horaMatch = tMed.match(/(\d{1,2}(?:-\d{1,2})*)$/);
-                                if(horaMatch) {
-                                    horaMatch[0].split('-').forEach(h => {
-                                        if(hTurnos[turno].includes(parseInt(h === '24' ? '0' : h))) {
-                                            pasos.push({ cam, nom, med: tMed.replace(horaMatch[0], '').trim(), hora: h + ":00", obs });
-                                        }
-                                    });
-                                }
-                            });
-                        }
+        pasos = [];
+        for (const file of files) {
+            const arrayBuffer = await file.arrayBuffer();
+            const result = await mammoth.convertToHtml({arrayBuffer});
+            const el = document.createElement('div'); el.innerHTML = result.value;
+            const rows = Array.from(el.querySelectorAll('tr'));
+            
+            rows.slice(2).forEach(row => {
+                const cols = row.querySelectorAll('td');
+                if(cols.length >= 3) {
+                    const cam = cols[0].innerText.trim();
+                    const nom = cols[1].innerText.trim();
+                    const meds = cols[2].innerHTML.split(/<p>|<br>|<div>/);
+                    const obs = cols[3] ? cols[3].innerText.trim() : "Sin observaciones";
+                    if(nom.length > 1) {
+                        meds.forEach(m => {
+                            let tMed = m.replace(/<[^>]*>?/gm, '').trim();
+                            const horaMatch = tMed.match(/(\d{1,2}(?:-\d{1,2})*)$/);
+                            if(horaMatch) {
+                                horaMatch[0].split('-').forEach(h => {
+                                    if(hTurnos[turno].includes(parseInt(h === '24' ? '0' : h))) {
+                                        pasos.push({ cam, nom, med: tMed.replace(horaMatch[0], '').trim(), hora: h + ":00", obs });
+                                    }
+                                });
+                            }
+                        });
                     }
-                });
-                if(pasos.length > 0) {
-                    document.getElementById('setup').classList.add('hidden');
-                    document.getElementById('viewer').classList.remove('hidden');
-                    // NO hablamos aquí, esperamos a que toque ACTIVAR VOZ para desbloquear audio
-                    mostrarManual();
-                } else alert("No hay datos en este turno");
+                }
             });
-        };
-        reader.readAsArrayBuffer(this.files[0]);
+        }
+        if(pasos.length > 0) { document.getElementById('setup').classList.add('hidden'); document.getElementById('viewer').classList.remove('hidden'); mostrar(false); }
     });
 
-    function mostrarManual() {
+    function mostrar(conAudio) {
         const p = pasos[indice];
         document.getElementById('pNom').innerText = p.nom;
         document.getElementById('pCam').innerText = "CAMA " + p.cam;
         document.getElementById('mDet').innerText = p.med;
         document.getElementById('mHor').innerText = p.hora + " HRS";
         document.getElementById('mObs').innerText = p.obs;
-    }
 
-    function iniciarSistemaVoz() {
-        // GESTO DE USUARIO: Desbloquea SpeechSynthesis en iPad
-        hablar("Iniciando revisión.");
-        
-        const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!Speech) return alert("Navegador no compatible");
-
-        rec = new Speech();
-        rec.lang = 'es-MX';
-        rec.continuous = true;
-
-        rec.onstart = () => {
-            document.getElementById('btnVoz').style.background = "#32D74B";
-            document.getElementById('logMic').innerText = "Voz: OK";
-            mostrarConVoz(); // Empezamos a dictar
-        };
-
-        rec.onresult = (e) => {
-            const cmd = e.results[e.results.length - 1][0].transcript.toLowerCase();
-            document.getElementById('logMic').innerText = "Escuché: " + cmd;
-            if (cmd.includes("siguiente") || cmd.includes("ok") || cmd.includes("sí") || cmd.includes("correcto")) siguiente();
-            if (cmd.includes("falta") || cmd.includes("no")) marcarFaltante();
-        };
-
-        rec.onend = () => { rec.start(); }; 
-        rec.start();
-    }
-
-    function mostrarConVoz() {
-        const p = pasos[indice];
-        mostrarManual();
-        hablar(`Paciente ${p.nom}. Cama ${p.cam}. ${p.med}. A las ${p.hora}`);
-    }
-
-    function siguiente() {
-        if (indice < pasos.length - 1) {
-            indice++;
-            mostrarConVoz();
-        } else {
-            hablar("Fin de la lista.");
-            setTimeout(() => location.reload(), 2000);
+        if (conAudio) {
+            let textoVoz = "";
+            if (p.nom !== ultimoPaciente) {
+                textoVoz = `Paciente ${p.nom}. Cama ${p.cam}. `;
+                ultimoPaciente = p.nom;
+            }
+            textoVoz += `${p.med}. Hora: ${p.hora}`;
+            hablar(textoVoz);
         }
     }
 
-    function marcarFaltante() {
-        hablar("Anotado.");
+    function iniciarVoz() {
+        hablar("Iniciando.");
+        const Speech = window.webkitSpeechRecognition || window.SpeechRecognition;
+        const rec = new Speech();
+        rec.lang = 'es-MX'; rec.continuous = true;
+        rec.onstart = () => { document.getElementById('btnVoz').style.background = "#32D74B"; document.getElementById('logMic').innerText = "Micro: LISTO"; mostrar(true); };
+        rec.onresult = (e) => {
+            const cmd = e.results[e.results.length - 1][0].transcript.toLowerCase();
+            document.getElementById('logMic').innerText = "Escuché: " + cmd;
+            if (cmd.includes("siguiente") || cmd.includes("ok") || cmd.includes("sí") || cmd.includes("pasa")) siguiente();
+            if (cmd.includes("falta") || cmd.includes("no lo tengo") || cmd.includes("no tengo")) marcarFaltante('FALTANTE');
+            if (cmd.includes("etiqueta") || cmd.includes("mal") || cmd.includes("corregir")) marcarFaltante('CORREGIR ETIQUETA');
+        };
+        rec.onend = () => rec.start(); rec.start();
+    }
+
+    function siguiente() {
+        if (indice < pasos.length - 1) { indice++; mostrar(true); }
+        else { finalizar(); }
+    }
+
+    function marcarFaltante(tipo) {
+        pendientes.push({ ...pasos[indice], problema: tipo });
+        hablar(tipo === 'FALTANTE' ? "Anotado como falta" : "Anotado error de etiqueta");
         setTimeout(siguiente, 1200);
+    }
+
+    function finalizar() {
+        hablar("Revisión terminada.");
+        document.getElementById('viewer').classList.add('hidden');
+        document.getElementById('report').classList.remove('hidden');
+        const body = document.getElementById('reportContent');
+        body.innerHTML = pendientes.length ? pendientes.map(p => `<tr><td>${p.cam}</td><td>${p.nom}</td><td>${p.med}</td><td style="color:var(--red)">${p.problema}</td></tr>`).join('') : "<tr><td colspan='4' style='text-align:center; color:var(--green)'>Todo correcto. Sin pendientes.</td></tr>";
     }
 </script>
 </body>
