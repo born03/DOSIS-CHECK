@@ -4,61 +4,62 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Dosis Check Pro v14</title>
+    <title>Dosis Check Pro v15</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
     <style>
-        :root { --bg: #000; --blue: #0A84FF; --green: #30D158; --red: #FF453A; --yellow: #FFD60A; }
+        :root { --bg: #000; --blue: #0A84FF; --green: #30D158; --red: #FF453A; --yellow: #FFD60A; --card: #1C1C1E; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: white; margin: 0; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
         
-        /* Overlays */
+        /* UI de Carga */
         .overlay { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; }
         .hidden { display: none !important; }
 
-        /* UI Principal */
-        .header { background: #1C1C1E; padding: 15px 25px; border-bottom: 2px solid var(--blue); }
-        .p-nombre { font-size: 2.2rem; font-weight: bold; margin: 0; }
-        .p-cama { font-size: 1.3rem; color: var(--blue); font-weight: 600; }
+        /* Pantalla Principal */
+        .header { background: var(--card); padding: 15px 25px; border-bottom: 2px solid var(--blue); }
+        .p-nombre { font-size: 2rem; font-weight: bold; margin: 0; }
+        .p-cama { font-size: 1.2rem; color: var(--blue); font-weight: 600; }
         
         .main-content { flex: 1; display: flex; overflow: hidden; }
-        .col-med { flex: 1.3; padding: 30px; display: flex; flex-direction: column; justify-content: center; border-right: 1px solid #333; }
-        .col-obs { flex: 0.7; padding: 30px; background: #080808; display: flex; flex-direction: column; justify-content: center; }
+        .col-med { flex: 1.3; padding: 25px; display: flex; flex-direction: column; justify-content: center; border-right: 1px solid #333; }
+        .col-obs { flex: 0.7; padding: 25px; background: #080808; display: flex; flex-direction: column; justify-content: center; }
         
-        .val-med { font-size: 3rem; font-weight: 800; color: var(--yellow); line-height: 1.1; }
-        .val-hora { font-size: 2.2rem; color: var(--green); margin-top: 15px; font-weight: bold; background: rgba(48, 209, 88, 0.15); padding: 5px 20px; border-radius: 12px; display: inline-block; }
-        .val-obs { font-size: 1.6rem; color: #8E8E93; border-left: 4px solid var(--blue); padding-left: 15px; font-style: italic; }
+        .val-med { font-size: 2.8rem; font-weight: 800; color: var(--yellow); line-height: 1.1; }
+        .val-hora { font-size: 2rem; color: var(--green); margin-top: 15px; font-weight: bold; background: rgba(48, 209, 88, 0.1); padding: 5px 15px; border-radius: 10px; display: inline-block; }
+        .val-obs { font-size: 1.4rem; color: #8E8E93; border-left: 4px solid var(--blue); padding-left: 15px; font-style: italic; }
 
-        /* Footer con Botones */
-        .footer { background: #1C1C1E; display: flex; gap: 10px; padding: 20px 20px calc(20px + env(safe-area-inset-bottom)); }
-        .btn { flex: 1; height: 75px; border-radius: 20px; border: none; font-size: 1.2rem; font-weight: bold; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        /* Footer / Botonera */
+        .footer { background: var(--card); display: flex; gap: 8px; padding: 15px; padding-bottom: calc(15px + env(safe-area-inset-bottom)); }
+        .btn { flex: 1; height: 70px; border-radius: 15px; border: none; font-size: 1rem; font-weight: bold; color: white; cursor: pointer; text-transform: uppercase; }
         .btn-fail { background: #3d0a0a; color: var(--red); border: 2px solid var(--red); }
         .btn-label { background: #3d2b00; color: var(--yellow); border: 2px solid var(--yellow); }
         .btn-next { background: var(--blue); }
+        .btn-voice { background: #333; }
 
         /* Reporte Final */
-        #reportTable { width: 100%; border-collapse: collapse; margin-top: 20px; color: white; }
-        #reportTable td, #reportTable th { border: 1px solid #333; padding: 12px; text-align: left; }
-        #reportTable th { background: #1C1C1E; color: var(--blue); }
-        .btn-print { background: var(--green); margin-top: 20px; padding: 15px 40px; }
+        #reportTable { width: 100%; border-collapse: collapse; margin-top: 20px; background: #111; }
+        #reportTable th, #reportTable td { border: 1px solid #333; padding: 12px; text-align: left; }
+        #reportTable th { color: var(--blue); text-transform: uppercase; font-size: 0.8rem; }
+        .btn-print { background: var(--green); margin-top: 20px; padding: 20px; width: 100%; max-width: 400px; }
 
-        .log-status { position: fixed; top: 10px; right: 20px; font-size: 0.8rem; color: var(--green); background: rgba(0,0,0,0.6); padding: 5px 12px; border-radius: 10px; }
-        @media print { .btn-print, .btn-start { display: none; } .overlay { position: relative; background: white; color: black; } #reportTable { color: black; } #reportTable td { border: 1px solid #000; } }
+        .log-mic { position: fixed; top: 10px; right: 20px; font-size: 0.7rem; color: var(--green); z-index: 10000; background: rgba(0,0,0,0.7); padding: 4px 10px; border-radius: 8px; }
+        @media print { .no-print { display: none !important; } .overlay { position: relative; background: white; color: black; } #reportTable { color: black; } #reportTable td, #reportTable th { border: 1px solid black; } }
     </style>
 </head>
 <body>
 
 <div id="setup" class="overlay">
-    <h1 style="font-size: 2.5rem; margin-bottom: 20px;">Dosis Check Pro v14</h1>
-    <select id="turnoSelect" style="width: 100%; max-width: 400px; padding: 18px; background: #1C1C1E; color: white; border-radius: 12px; margin-bottom: 20px; font-size: 1.2rem;">
-        <option value="matutino">Matutino (14-21h)</option>
-        <option value="vespertino">Vespertino (22-03h)</option>
-        <option value="nocturno">Nocturno (04-13h)</option>
+    <h1 style="font-size: 2rem; margin-bottom: 20px;">Dosis Check Pro v15</h1>
+    <select id="turnoSelect" style="width: 100%; max-width: 350px; padding: 15px; background: #1C1C1E; color: white; border-radius: 10px; margin-bottom: 20px; font-size: 1.1rem; border: 1px solid #444;">
+        <option value="matutino">Turno Matutino (14-21h)</option>
+        <option value="vespertino">Turno Vespertino (22-03h)</option>
+        <option value="nocturno">Turno Nocturno (04-13h)</option>
     </select>
-    <button onclick="document.getElementById('docInput').click()" style="width: 100%; max-width: 400px; padding: 22px; background: var(--blue); color: white; border: none; border-radius: 15px; font-weight: bold; font-size: 1.2rem;">📁 CARGAR WORD(S)</button>
+    <button onclick="document.getElementById('docInput').click()" style="width: 100%; max-width: 350px; padding: 20px; background: var(--blue); color: white; border: none; border-radius: 12px; font-weight: bold; font-size: 1.2rem;">📁 CARGAR ARCHIVOS WORD</button>
     <input type="file" id="docInput" accept=".docx" multiple class="hidden">
 </div>
 
-<div class="log-status" id="logMic">Micro: OFF</div>
+<div class="log-mic" id="logMic">Voz: OFF</div>
 
 <div id="viewer" class="hidden" style="display: flex; flex-direction: column; height: 100dvh;">
     <div class="header">
@@ -75,25 +76,25 @@
         </div>
     </div>
     <div class="footer">
-        <button id="btnVoz" class="btn" style="background:#333" onclick="iniciarVoz()">🎙️ VOZ</button>
-        <button class="btn btn-fail" onclick="marcarFaltante('FALTANTE')">FALTA</button>
-        <button class="btn btn-label" onclick="marcarFaltante('CORREGIR ETIQUETA')">ETIQUETA</button>
+        <button id="btnVoz" class="btn btn-voice" onclick="iniciarVoz()">🎙️ VOZ</button>
+        <button class="btn btn-fail" onclick="marcarProblema('FALTANTE')">FALTA</button>
+        <button class="btn btn-label" onclick="marcarProblema('CORREGIR ETIQUETA')">ETIQUETA</button>
         <button class="btn btn-next" onclick="siguiente()">SIGUIENTE</button>
     </div>
 </div>
 
 <div id="report" class="overlay hidden" style="justify-content: flex-start; overflow-y: auto;">
-    <h1 style="color:var(--red); margin-top: 40px;">Pendientes de Revisión</h1>
+    <h1 style="color:var(--red); margin-top: 30px;">Reporte de Pendientes</h1>
     <table id="reportTable">
-        <thead><tr><th>Cama</th><th>Paciente</th><th>Medicamento</th><th>Problema</th></tr></thead>
+        <thead><tr><th>Cama</th><th>Paciente</th><th>Medicamento</th><th>Acción</th></tr></thead>
         <tbody id="reportContent"></tbody>
     </table>
-    <button class="btn btn-print" onclick="window.print()">🖨️ IMPRIMIR / PDF</button>
-    <button class="btn" style="background:#333; margin-top:10px;" onclick="location.reload()">NUEVA REVISIÓN</button>
+    <button class="btn btn-print no-print" onclick="window.print()">🖨️ IMPRIMIR / GUARDAR PDF</button>
+    <button class="btn no-print" style="background:#333; margin-top:10px; width:100%; max-width:400px;" onclick="location.reload()">NUEVA REVISIÓN</button>
 </div>
 
 <script>
-    let pasos = [], pendientes = [], indice = 0, ultimoPaciente = "";
+    let pasos = [], pendientes = [], indice = 0, ultimoNombre = "";
     const synth = window.speechSynthesis;
 
     function hablar(t) {
@@ -105,14 +106,14 @@
     document.getElementById('docInput').addEventListener('change', async function(e) {
         const files = Array.from(e.target.files);
         const turno = document.getElementById('turnoSelect').value;
-        const hTurnos = { matutino: [14,15,16,17,18,19,20,21], vespertino: [22,23,24,0,1,2,3], nocturno: [4,5,6,7,8,9,10,11,12,13] };
+        const hTurnos = { matutino:[14,15,16,17,18,19,20,21], vespertino:[22,23,24,0,1,2,3], nocturno:[4,5,6,7,8,9,10,11,12,13] };
         
         pasos = [];
         for (const file of files) {
-            const arrayBuffer = await file.arrayBuffer();
-            const result = await mammoth.convertToHtml({arrayBuffer});
-            const el = document.createElement('div'); el.innerHTML = result.value;
-            const rows = Array.from(el.querySelectorAll('tr'));
+            const buffer = await file.arrayBuffer();
+            const res = await mammoth.convertToHtml({arrayBuffer: buffer});
+            const div = document.createElement('div'); div.innerHTML = res.value;
+            const rows = Array.from(div.querySelectorAll('tr'));
             
             rows.slice(2).forEach(row => {
                 const cols = row.querySelectorAll('td');
@@ -123,12 +124,12 @@
                     const obs = cols[3] ? cols[3].innerText.trim() : "Sin observaciones";
                     if(nom.length > 1) {
                         meds.forEach(m => {
-                            let tMed = m.replace(/<[^>]*>?/gm, '').trim();
-                            const horaMatch = tMed.match(/(\d{1,2}(?:-\d{1,2})*)$/);
-                            if(horaMatch) {
-                                horaMatch[0].split('-').forEach(h => {
+                            let t = m.replace(/<[^>]*>?/gm, '').trim();
+                            const match = t.match(/(\d{1,2}(?:-\d{1,2})*)$/);
+                            if(match) {
+                                match[0].split('-').forEach(h => {
                                     if(hTurnos[turno].includes(parseInt(h === '24' ? '0' : h))) {
-                                        pasos.push({ cam, nom, med: tMed.replace(horaMatch[0], '').trim(), hora: h + ":00", obs });
+                                        pasos.push({ cam, nom, med: t.replace(match[0], '').trim(), hora: h + ":00", obs });
                                     }
                                 });
                             }
@@ -140,7 +141,7 @@
         if(pasos.length > 0) { document.getElementById('setup').classList.add('hidden'); document.getElementById('viewer').classList.remove('hidden'); mostrar(false); }
     });
 
-    function mostrar(conAudio) {
+    function mostrar(conVoz) {
         const p = pasos[indice];
         document.getElementById('pNom').innerText = p.nom;
         document.getElementById('pCam').innerText = "CAMA " + p.cam;
@@ -148,31 +149,47 @@
         document.getElementById('mHor').innerText = p.hora + " HRS";
         document.getElementById('mObs').innerText = p.obs;
 
-        if (conAudio) {
-            let textoVoz = "";
-            if (p.nom !== ultimoPaciente) {
-                textoVoz = `Paciente ${p.nom}. Cama ${p.cam}. `;
-                ultimoPaciente = p.nom;
+        if (conVoz) {
+            let texto = "";
+            if (p.nom !== ultimoNombre) {
+                texto = `Paciente ${p.nom}. Cama ${p.cam}. `;
+                ultimoNombre = p.nom;
             }
-            textoVoz += `${p.med}. Hora: ${p.hora}`;
-            hablar(textoVoz);
+            texto += `${p.med}. A las ${p.hora}`;
+            hablar(texto);
         }
     }
 
     function iniciarVoz() {
         hablar("Iniciando.");
         const Speech = window.webkitSpeechRecognition || window.SpeechRecognition;
+        if (!Speech) return alert("Navegador no compatible");
         const rec = new Speech();
         rec.lang = 'es-MX'; rec.continuous = true;
-        rec.onstart = () => { document.getElementById('btnVoz').style.background = "#32D74B"; document.getElementById('logMic').innerText = "Micro: LISTO"; mostrar(true); };
+        rec.onstart = () => { 
+            document.getElementById('btnVoz').style.background = "#32D74B"; 
+            document.getElementById('logMic').innerText = "Voz: ON"; 
+            mostrar(true); 
+        };
         rec.onresult = (e) => {
             const cmd = e.results[e.results.length - 1][0].transcript.toLowerCase();
             document.getElementById('logMic').innerText = "Escuché: " + cmd;
-            if (cmd.includes("siguiente") || cmd.includes("ok") || cmd.includes("sí") || cmd.includes("pasa")) siguiente();
-            if (cmd.includes("falta") || cmd.includes("no lo tengo") || cmd.includes("no tengo")) marcarFaltante('FALTANTE');
-            if (cmd.includes("etiqueta") || cmd.includes("mal") || cmd.includes("corregir")) marcarFaltante('CORREGIR ETIQUETA');
+            
+            // Comandos de navegación
+            if (cmd.includes("siguiente") || cmd.includes("ok") || cmd.includes("sí") || cmd.includes("correcto") || cmd.includes("pasa")) {
+                siguiente();
+            }
+            // Comandos de Faltante
+            else if (cmd.includes("falta") || cmd.includes("no lo tengo") || cmd.includes("no tengo")) {
+                marcarProblema('FALTANTE');
+            }
+            // COMANDOS DE ETIQUETA (SOLICITADOS)
+            else if (cmd.includes("esta mal la etiqueta") || cmd.includes("corregir etiqueta") || cmd.includes("etiqueta")) {
+                marcarProblema('CORREGIR ETIQUETA');
+            }
         };
-        rec.onend = () => rec.start(); rec.start();
+        rec.onend = () => rec.start();
+        rec.start();
     }
 
     function siguiente() {
@@ -180,9 +197,9 @@
         else { finalizar(); }
     }
 
-    function marcarFaltante(tipo) {
+    function marcarProblema(tipo) {
         pendientes.push({ ...pasos[indice], problema: tipo });
-        hablar(tipo === 'FALTANTE' ? "Anotado como falta" : "Anotado error de etiqueta");
+        hablar(tipo === 'FALTANTE' ? "Anotado como falta" : "Anotado corregir etiqueta");
         setTimeout(siguiente, 1200);
     }
 
@@ -191,7 +208,7 @@
         document.getElementById('viewer').classList.add('hidden');
         document.getElementById('report').classList.remove('hidden');
         const body = document.getElementById('reportContent');
-        body.innerHTML = pendientes.length ? pendientes.map(p => `<tr><td>${p.cam}</td><td>${p.nom}</td><td>${p.med}</td><td style="color:var(--red)">${p.problema}</td></tr>`).join('') : "<tr><td colspan='4' style='text-align:center; color:var(--green)'>Todo correcto. Sin pendientes.</td></tr>";
+        body.innerHTML = pendientes.length ? pendientes.map(p => `<tr><td>${p.cam}</td><td>${p.nom}</td><td>${p.med}</td><td style="color:var(--red); font-weight:bold;">${p.problema}</td></tr>`).join('') : "<tr><td colspan='4' style='text-align:center; color:var(--green)'>Todo correcto.</td></tr>";
     }
 </script>
 </body>
