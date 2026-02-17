@@ -1,31 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Dosis Check Pro v19</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
+    <style>
+        :root { --bg: #000; --blue: #0A84FF; --green: #30D158; --red: #FF453A; --yellow: #FFD60A; --card: #1C1C1E; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: white; margin: 0; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+        
+        .overlay { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; }
+        .hidden { display: none !important; }
+
+        .header { background: var(--card); padding: 15px 20px; border-bottom: 2px solid var(--blue); display: flex; justify-content: space-between; align-items: center; }
+        .p-nombre { font-size: 1.6rem; font-weight: bold; margin: 0; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70%; }
+        .p-cama { font-size: 1.2rem; color: var(--blue); font-weight: 800; margin: 0; }
+        
+        .progress-bar { height: 6px; background: #333; width: 100%; }
+        .progress-fill { height: 100%; background: var(--blue); width: 0%; transition: width 0.3s; }
+
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .col-med { flex: 1; padding: 30px 20px; display: flex; flex-direction: column; justify-content: center; text-align: center; }
+        .col-obs { padding: 20px; background: #080808; min-height: 120px; border-top: 1px solid #333; }
+        
+        .val-med { font-size: 2.2rem; font-weight: 800; color: var(--yellow); line-height: 1.1; margin-bottom: 15px; }
+        .val-hora { font-size: 1.6rem; color: var(--green); font-weight: bold; background: rgba(48, 209, 88, 0.1); padding: 8px 20px; border-radius: 50px; display: inline-block; }
+        .val-obs { font-size: 1.1rem; color: #8E8E93; border-left: 4px solid var(--blue); padding-left: 15px; font-style: italic; }
+
+        .footer { background: var(--card); display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 15px; padding-bottom: calc(15px + env(safe-area-inset-bottom)); }
+        .btn { height: 65px; border-radius: 15px; border: none; font-size: 0.9rem; font-weight: bold; color: white; cursor: pointer; text-transform: uppercase; }
+        .btn-fail { background: #3d0a0a; color: var(--red); border: 2px solid var(--red); }
+        .btn-label { background: #3d2b00; color: var(--yellow); border: 2px solid var(--yellow); }
+        .btn-next { background: var(--blue); grid-column: span 2; height: 60px; }
+
+        #report { background: white !important; color: black !important; justify-content: flex-start; overflow-y: auto; }
+        #reportTable { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        #reportTable th, #reportTable td { border: 1px solid #ddd; padding: 10px; text-align: left; font-size: 0.8rem; }
+        
+        .log-mic { position: fixed; top: 75px; right: 10px; font-size: 0.7rem; color: var(--green); z-index: 1000; background: rgba(0,0,0,0.8); padding: 5px 12px; border-radius: 20px; border: 1px solid var(--green); }
+    </style>
+</head>
+<body>
+
+<div id="setup" class="overlay">
+    <h1 style="color: var(--blue);">Dosis Check Pro v19</h1>
+    <select id="turnoSelect" style="width: 100%; max-width: 350px; padding: 15px; background: #1C1C1E; color: white; border-radius: 12px; margin-bottom: 20px; border: 1px solid #444;">
+        <option value="matutino">Matutino (14h-21h)</option>
+        <option value="vespertino">Vespertino (22h-03h)</option>
+        <option value="nocturno">Nocturno (04h-13h)</option>
+    </select>
+    <button onclick="document.getElementById('docInput').click()" style="width: 100%; max-width: 350px; padding: 20px; background: var(--blue); color: white; border: none; border-radius: 15px; font-weight: bold;">📁 CARGAR ARCHIVOS .DOCX</button>
+    <input type="file" id="docInput" accept=".docx" multiple class="hidden">
+</div>
+
+<div class="log-mic hidden" id="logMic">ESCUCHANDO...</div>
+
+<div id="viewer" class="hidden" style="height: 100dvh; display: flex; flex-direction: column;">
+    <div class="header">
+        <p id="pNom" class="p-nombre">Nombre</p>
+        <p id="pCam" class="p-cama">CAMA</p>
+    </div>
+    <div class="progress-bar"><div id="pFill" class="progress-fill"></div></div>
+    <div class="main-content">
+        <div class="col-med">
+            <div class="val-med" id="mDet">---</div>
+            <div id="mHor" class="val-hora">--:--</div>
+        </div>
+        <div class="col-obs">
+            <div id="mObs" class="val-obs">---</div>
+        </div>
+    </div>
+    <div class="footer">
+        <button id="btnVoz" class="btn" style="background:#333; grid-column: span 2;" onclick="iniciarVoz()">🎙️ ACTIVAR VOZ / INICIAR</button>
+        <button class="btn btn-fail" onclick="marcarProblema('FALTA')">FALTA</button>
+        <button class="btn btn-label" onclick="marcarProblema('ETIQUETA')">ETIQUETA</button>
+        <button class="btn btn-next" onclick="siguiente()">SIGUIENTE ➔</button>
+    </div>
+</div>
+
+<div id="report" class="overlay hidden">
+    <h2>Reporte de Pendientes</h2>
+    <table id="reportTable">
+        <thead><tr><th>Cama</th><th>Paciente</th><th>Medicamento</th><th>Problema</th></tr></thead>
+        <tbody id="reportContent"></tbody>
+    </table>
+    <button class="btn" style="background:var(--blue); width:100%; margin-top:20px;" onclick="window.print()">IMPRIMIR PDF</button>
+    <button class="btn" style="background:#666; width:100%; margin-top:10px;" onclick="location.reload()">NUEVA REVISIÓN</button>
+</div>
+
 <script>
-    let pasos = [], pendientes = [], indice = 0;
-    let voiceActive = false;
+    let pasos = [], pendientes = [], indice = 0, voiceActive = false;
     const synth = window.speechSynthesis;
 
     function hablar(t) {
-        if (!t || !voiceActive) return; 
+        if (!t || !voiceActive) return;
         synth.cancel();
-        const u = new SpeechSynthesisUtterance(t
-            .replace(/\bIV\b/gi, "Intravenosa")
-            .replace(/\bIM\b/gi, "Intramuscular")
-            .replace(/\bVO\b/gi, "Vía Oral")
-            .replace(/\bPRN\b/gi, "Por razón necesaria")
-            .replace(/\bC\//gi, "Cada ")
-            .replace(/\bMG\b/gi, "miligramos")
-        );
-        u.lang = 'es-MX'; u.rate = 1.0;
+        const u = new SpeechSynthesisUtterance(t.replace(/\bIV\b/gi, "Intravenosa").replace(/\bIM\b/gi, "Intramuscular").replace(/\bVO\b/gi, "Vía Oral").replace(/\bC\//gi, "Cada ").replace(/\bMG\b/gi, "miligramos"));
+        u.lang = 'es-MX'; u.rate = 1.1;
         synth.speak(u);
     }
 
     document.getElementById('docInput').addEventListener('change', async function(e) {
         const files = Array.from(e.target.files);
         const turno = document.getElementById('turnoSelect').value;
-        const hTurnos = { 
-            matutino:[14,15,16,17,18,19,20,21], 
-            vespertino:[22,23,0,1,2,3], 
-            nocturno:[4,5,6,7,8,9,10,11,12,13] 
-        };
+        const hTurnos = { matutino:[14,15,16,17,18,19,20,21], vespertino:[22,23,0,1,2,3], nocturno:[4,5,6,7,8,9,10,11,12,13] };
         
         pasos = [];
         for (const file of files) {
@@ -39,51 +119,34 @@
                 if(cols.length >= 3) {
                     const cam = cols[0].innerText.trim();
                     const nom = cols[1].innerText.trim();
-                    const medsRaw = cols[2].innerHTML.split(/<p>|<br>|<div>/);
+                    const meds = cols[2].innerHTML.split(/<p>|<br>|<div>/);
                     const obs = cols[3] ? cols[3].innerText.trim() : "Sin observaciones";
                     
-                    if(nom.length > 2) {
-                        medsRaw.forEach(m => {
-                            let text = m.replace(/<[^>]*>?/gm, '').trim();
-                            if(!text || text.length < 3) return;
+                    if(nom.length > 1) {
+                        meds.forEach(m => {
+                            let t = m.replace(/<[^>]*>?/gm, '').trim();
+                            if(!t || t.length < 3) return;
 
-                            // 1. FILTRO PRN: Si contiene PRN, lo ignoramos totalmente
-                            if (/\bPRN\b/i.test(text)) return;
+                            // REGLA 1: Ignorar PRN
+                            if (/\bPRN\b/i.test(t)) return;
 
-                            // 2. BUSCAR HORARIOS FIJOS (Ej: 8-16-24) al final de la línea
-                            const matchHoras = text.match(/(\d{1,2}(?:-\d{1,2})*)$/);
+                            // REGLA 2: Buscar horas fijas (ej. 8-16-24)
+                            const matchHoras = t.match(/(\d{1,2}(?:-\d{1,2})*)$/);
                             
-                            // 3. BUSCAR FRECUENCIAS (Ej: C/8h, C/24h, Cada 12 hrs)
-                            const esFrecuencia = /(C\/|CADA)\s*\d+/i.test(text);
-                            
-                            // 4. TEXTOS ESPECIALES (Previo a, Sin horario, Tachado)
-                            const esEspecial = /(PREVIO|TACHADO|POR DEFINIR|INDICACIÓN)/i.test(text);
+                            // REGLA 3: Detectar frecuencias (C/8H) o textos (PREVIO A)
+                            const esFrecuencia = /(C\/|CADA|HRS|HORAS)/i.test(t);
+                            const esEspecial = /(PREVIO|TACHADO|ESPECIAL|VANCO|RITU)/i.test(t);
 
                             if(matchHoras) {
-                                // Caso normal: Tiene horas definidas
-                                const horasEnTexto = matchHoras[0].split('-');
-                                horasEnTexto.forEach(h => {
-                                    let horaNum = parseInt(h === '24' ? '0' : h);
-                                    if(hTurnos[turno].includes(horaNum)) {
-                                        pasos.push({ 
-                                            cam, nom, 
-                                            med: text.replace(matchHoras[0], '').trim(), 
-                                            hora: h + ":00", 
-                                            obs, 
-                                            tipo: 'fijo' 
-                                        });
+                                matchHoras[0].split('-').forEach(h => {
+                                    let hNum = parseInt(h === '24' ? '0' : h);
+                                    if(hTurnos[turno].includes(hNum)) {
+                                        pasos.push({ cam, nom, med: t.replace(matchHoras[0], '').trim(), hora: h + ":00", obs });
                                     }
                                 });
-                            } 
-                            else if (esFrecuencia || esEspecial) {
-                                // Caso C/8h o Previo a: Lo incluimos siempre en el turno para que no se escape
-                                pasos.push({ 
-                                    cam, nom, 
-                                    med: text, 
-                                    hora: "PENDIENTE", 
-                                    obs: "⚠️ " + (esFrecuencia ? "Revisar frecuencia" : "Indicación especial"), 
-                                    tipo: 'especial' 
-                                });
+                            } else if (esFrecuencia || esEspecial) {
+                                // Se agrega como "Pendiente de hora" para no omitirlo
+                                pasos.push({ cam, nom, med: t, hora: "REVISAR", obs: "⚠️ Indicación sin hora fija" });
                             }
                         });
                     }
@@ -94,6 +157,8 @@
             document.getElementById('setup').classList.add('hidden');
             document.getElementById('viewer').classList.remove('hidden');
             mostrar(false);
+        } else {
+            alert("No se encontraron medicamentos para este turno.");
         }
     });
 
@@ -102,23 +167,58 @@
         document.getElementById('pNom').innerText = p.nom;
         document.getElementById('pCam').innerText = "CAMA " + p.cam;
         document.getElementById('mDet').innerText = p.med;
-        
-        const horElem = document.getElementById('mHor');
-        horElem.innerText = p.hora === "PENDIENTE" ? "HORARIO MANUAL" : p.hora + " HRS";
-        horElem.style.background = p.hora === "PENDIENTE" ? "rgba(255, 69, 58, 0.2)" : "rgba(48, 209, 88, 0.1)";
-        
+        document.getElementById('mHor').innerText = p.hora === "REVISAR" ? "HORARIO MANUAL" : p.hora + " HRS";
         document.getElementById('mObs').innerText = p.obs;
-        
-        const progreso = ((indice + 1) / pasos.length) * 100;
-        document.getElementById('pFill').style.width = progreso + "%";
+        document.getElementById('pFill').style.width = ((indice + 1) / pasos.length * 100) + "%";
 
         if (conVoz && voiceActive) {
-            let infoHora = p.hora === "PENDIENTE" ? "con horario por definir" : `a las ${p.hora}`;
+            let txtHora = p.hora === "REVISAR" ? "con horario por definir" : "a las " + p.hora;
             let guion = (indice > 0 && pasos[indice].nom === pasos[indice - 1].nom) 
-                ? `Mismo paciente. ${p.med}. ${infoHora}.` 
-                : `Paciente ${p.nom}. Cama ${p.cam}. ${p.med}. ${infoHora}.`;
+                ? `Mismo paciente. ${p.med}. ${txtHora}.` 
+                : `Paciente ${p.nom}. Cama ${p.cam}. ${p.med}. ${txtHora}.`;
             hablar(guion);
         }
     }
-    // ... (Resto de funciones: iniciarVoz, siguiente, finalizar son iguales)
+
+    function iniciarVoz() {
+        if (voiceActive) return;
+        voiceActive = true;
+        document.getElementById('btnVoz').innerText = "🎙️ VOZ ACTIVA";
+        document.getElementById('btnVoz').style.background = var(--green);
+        document.getElementById('logMic').classList.remove('hidden');
+
+        const Speech = window.webkitSpeechRecognition || window.SpeechRecognition;
+        const rec = new Speech();
+        rec.lang = 'es-MX'; rec.continuous = true;
+
+        rec.onresult = (e) => {
+            const cmd = e.results[e.results.length - 1][0].transcript.toLowerCase();
+            if (/(siguiente|sigue|ok|si|sí|pasa)/.test(cmd)) siguiente();
+            else if (/(falta|no)/.test(cmd)) marcarProblema('FALTA');
+            else if (/(etiqueta|corregir|mal)/.test(cmd)) marcarProblema('ETIQUETA');
+        };
+        rec.onend = () => { if(voiceActive) rec.start(); };
+        rec.start();
+        mostrar(true);
+    }
+
+    function siguiente() {
+        if (indice < pasos.length - 1) { indice++; mostrar(true); }
+        else { finalizar(); }
+    }
+
+    function marcarProblema(tipo) {
+        pendientes.push({ ...pasos[indice], problema: tipo });
+        hablar(tipo === 'FALTA' ? "Falta anotada" : "Etiqueta anotada");
+        setTimeout(siguiente, 1000);
+    }
+
+    function finalizar() {
+        voiceActive = false; synth.cancel();
+        document.getElementById('viewer').classList.add('hidden');
+        document.getElementById('report').classList.remove('hidden');
+        document.getElementById('reportContent').innerHTML = pendientes.map(p => `<tr><td>${p.cam}</td><td>${p.nom}</td><td>${p.med}</td><td>${p.problema}</td></tr>`).join('') || "<tr><td colspan='4'>Todo correcto</td></tr>";
+    }
 </script>
+</body>
+</html>
